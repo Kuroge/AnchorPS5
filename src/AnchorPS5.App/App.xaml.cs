@@ -24,12 +24,15 @@ public partial class App : Application
 
     public static AppConfig Config { get; private set; } = null!;
 
+    public static FirstRunService FirstRun { get; private set; } = null!;
+
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         // Sin config.json se crea con los valores por defecto y el idioma del sistema (si hay traducción).
         var detectedLanguage = Localization.DetectLanguage(CultureInfo.CurrentUICulture);
         Config = ConfigService.LoadOrCreate(detectedLanguage);
         Localization.Load(Config.Language);
+        FirstRun = new FirstRunService(ConfigService, Config);
 
         _window = new MainWindow();
         _window.Activate();

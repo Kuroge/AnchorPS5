@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AnchorPS5.App.Views.IntroQuestionPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:AnchorPS5.App.Localization">
+
+    <StackPanel
+        MaxWidth="560"
+        Margin="24"
+        VerticalAlignment="Center"
+        Spacing="20">
+
+        <TextBlock
+            Style="{StaticResource TitleTextBlockStyle}"
+            Text="{l:Loc Key=setup.askIntro}"
+            TextWrapping="Wrap" />
+        <TextBlock
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{l:Loc Key=setup.askIntroDescription}"
+            TextWrapping="Wrap" />
+
+        <StackPanel
+            HorizontalAlignment="Right"
+            Orientation="Horizontal"
+            Spacing="8">
+            <Button Click="OnNoClick" Content="{l:Loc Key=common.no}" />
+            <Button
+                Click="OnYesClick"
+                Content="{l:Loc Key=common.yes}"
+                Style="{StaticResource AccentButtonStyle}" />
+        </StackPanel>
+    </StackPanel>
+</Page>

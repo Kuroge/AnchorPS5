@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AnchorPS5.App.Views.SetupPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:AnchorPS5.App.Localization">
+
+    <ScrollViewer>
+        <StackPanel
+            MaxWidth="560"
+            Margin="24"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Center"
+            Spacing="20">
+
+            <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="{l:Loc Key=setup.title}" />
+            <TextBlock
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="{l:Loc Key=setup.subtitle}"
+                TextWrapping="Wrap" />
+
+            <ComboBox
+                MinWidth="240"
+                DisplayMemberPath="Name"
+                Header="{l:Loc Key=setup.language}"
+                ItemsSource="{x:Bind ViewModel.Languages}"
+                SelectedItem="{x:Bind ViewModel.SelectedLanguage, Mode=TwoWay}" />
+
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox
+                    Header="{l:Loc Key=setup.downloadFolder}"
+                    Text="{x:Bind ViewModel.DownloadPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button
+                    Grid.Column="1"
+                    VerticalAlignment="Bottom"
+                    Command="{x:Bind ViewModel.BrowseCommand}"
+                    Content="{l:Loc Key=setup.browse}" />
+            </Grid>
+
+            <InfoBar
+                IsClosable="False"
+                IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                Severity="Error" />
+
+            <Button
+                HorizontalAlignment="Right"
+                Command="{x:Bind ViewModel.ConfirmCommand}"
+                Content="{l:Loc Key=setup.confirm}"
+                Style="{StaticResource AccentButtonStyle}" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -6,9 +6,18 @@
   "nav.catalog": "Catálogo",
   "nav.guide": "Guía",
 
+  "setup.title": "Configuración inicial",
+  "setup.subtitle": "Elige el idioma y la carpeta donde se guardarán las descargas. Podrás cambiarlo más adelante editando config/config.json.",
   "setup.language": "Idioma",
   "setup.downloadFolder": "Carpeta de descargas",
+  "setup.browse": "Examinar…",
+  "setup.confirm": "Continuar",
+  "setup.invalidPath": "Indica la ruta completa de una carpeta (por ejemplo, C:\\Descargas).",
+  "setup.folderError": "No se puede crear o usar la carpeta «{0}». Elige otra.",
   "setup.askIntro": "¿Quieres ver la guía de introducción?",
+  "setup.askIntroDescription": "Una explicación breve de qué es el homebrew y cómo funciona AnchorPS5. Podrás volver a verla cuando quieras desde el botón «Guía».",
+
+  "intro.skip": "Saltar",
 
   "common.yes": "Sí",
   "common.no": "No, gracias",
