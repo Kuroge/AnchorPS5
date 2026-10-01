@@ -19,6 +19,8 @@
                     <SolidColorBrush x:Key="AnchorGoldBrush" Color="#F2C14E" />
                     <SolidColorBrush x:Key="AnchorBlueTintBrush" Color="#264DA3FF" />
                     <SolidColorBrush x:Key="AnchorGoldTintBrush" Color="#26F2C14E" />
+                    <SolidColorBrush x:Key="BetaBrush" Color="#FFA24A" />
+                    <SolidColorBrush x:Key="BetaTintBrush" Color="#26FFA24A" />
 
                     <Color x:Key="SystemAccentColor">#0070D1</Color>
                     <Color x:Key="SystemAccentColorLight1">#2E8BE6</Color>
@@ -33,6 +35,8 @@
                     <SolidColorBrush x:Key="AnchorGoldBrush" Color="#A67C00" />
                     <SolidColorBrush x:Key="AnchorBlueTintBrush" Color="#1A0070D1" />
                     <SolidColorBrush x:Key="AnchorGoldTintBrush" Color="#1FD4AC28" />
+                    <SolidColorBrush x:Key="BetaBrush" Color="#B85A00" />
+                    <SolidColorBrush x:Key="BetaTintBrush" Color="#1FE07A10" />
 
                     <Color x:Key="SystemAccentColor">#0070D1</Color>
                     <Color x:Key="SystemAccentColorLight1">#2E8BE6</Color>
@@ -57,6 +61,14 @@
                 <Setter Property="Background" Value="{ThemeResource AnchorBlueTintBrush}" />
                 <Setter Property="CornerRadius" Value="10" />
                 <Setter Property="Padding" Value="8,2" />
+            </Style>
+
+            <!-- Etiqueta "PS4": rectángulo redondeado gris con el texto en negro (igual en ambos temas). -->
+            <Style x:Key="Ps4BadgeStyle" TargetType="Border">
+                <Setter Property="Background" Value="#D6D6D6" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="Padding" Value="7,1" />
+                <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
 
             <Style x:Key="SecondaryTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">

@@ -119,6 +119,7 @@
                             Margin="0,10,0,0"
                             Orientation="Horizontal"
                             Spacing="8">
+                            <!-- Un solo fichero: Descargar -->
                             <Button
                                 MinWidth="140"
                                 AutomationProperties.Name="{l:Loc Key=action.download}"
@@ -130,15 +131,36 @@
                                     <TextBlock Text="{l:Loc Key=action.download}" />
                                 </StackPanel>
                             </Button>
+                            <!-- Varios ficheros: el usuario elige -->
+                            <DropDownButton
+                                x:Name="DownloadMenuButton"
+                                MinWidth="140"
+                                AutomationProperties.Name="{l:Loc Key=action.chooseDownload}"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Visibility="{x:Bind Item.ShowDownloadMenu, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="16" Glyph="&#xE896;" />
+                                    <TextBlock Text="{l:Loc Key=action.download}" />
+                                    <FontIcon
+                                        Margin="2,0,0,0"
+                                        FontSize="10"
+                                        Glyph="&#xE70D;" />
+                                </StackPanel>
+                                <DropDownButton.Flyout>
+                                    <MenuFlyout x:Name="DownloadMenu" Placement="BottomEdgeAlignedLeft" Opening="OnDownloadMenuOpening" />
+                                </DropDownButton.Flyout>
+                            </DropDownButton>
                             <Button
                                 MinWidth="140"
-                                AutomationProperties.Name="{x:Bind Item.UpdateButtonText}"
-                                Command="{x:Bind Item.DownloadCommand}"
-                                Style="{StaticResource AccentButtonStyle}"
+                                AutomationProperties.Name="{l:Loc Key=action.updateAll}"
+                                Command="{x:Bind Item.UpdateAllCommand}"
                                 Visibility="{x:Bind Item.ShowUpdateButton, Mode=OneWay}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon FontSize="16" Glyph="&#xE74A;" />
-                                    <TextBlock Text="{x:Bind Item.UpdateButtonText}" />
+                                    <FontIcon
+                                        FontSize="16"
+                                        Foreground="{ThemeResource AnchorGoldBrush}"
+                                        Glyph="&#xE74A;" />
+                                    <TextBlock Text="{l:Loc Key=action.updateAll}" />
                                 </StackPanel>
                             </Button>
                             <Button
@@ -151,48 +173,137 @@
                                 </StackPanel>
                             </Button>
                         </StackPanel>
-
-                        <!-- Descarga en curso -->
-                        <Grid
-                            MaxWidth="460"
-                            Margin="0,10,0,0"
-                            HorizontalAlignment="Left"
-                            ColumnDefinitions="*,Auto"
-                            ColumnSpacing="12"
-                            Visibility="{x:Bind Item.IsBusy, Mode=OneWay}">
-                            <StackPanel VerticalAlignment="Center" Spacing="6">
-                                <ProgressBar
-                                    MinWidth="320"
-                                    IsIndeterminate="{x:Bind Item.ActiveJob.IsIndeterminate, Mode=OneWay, FallbackValue=True}"
-                                    Value="{x:Bind Item.ActiveJob.ProgressValue, Mode=OneWay, FallbackValue=0}" />
-                                <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind Item.ActiveJob.StatusText, Mode=OneWay, FallbackValue=''}" />
-                            </StackPanel>
-                            <Button
-                                Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Command="{x:Bind Item.CancelDownloadCommand}"
-                                Content="{l:Loc Key=action.cancel}" />
-                        </Grid>
                     </StackPanel>
                 </Grid>
             </Grid>
 
-            <!-- Errores -->
-            <InfoBar
-                IsClosable="False"
-                IsOpen="{x:Bind Item.HasJobError, Mode=OneWay}"
-                Message="{x:Bind Item.ActiveJob.StatusText, Mode=OneWay, FallbackValue=''}"
-                Severity="Error"
-                Title="{l:Loc Key=download.failedTitle}">
-                <InfoBar.ActionButton>
-                    <Button Command="{x:Bind Item.RetryDownloadCommand}" Content="{l:Loc Key=action.retry}" />
-                </InfoBar.ActionButton>
-            </InfoBar>
             <InfoBar
                 IsClosable="True"
                 IsOpen="{x:Bind Item.HasActionError, Mode=OneWay}"
                 Message="{x:Bind Item.ActionError, Mode=OneWay}"
                 Severity="Error" />
+
+            <!-- Archivos: cada fichero publicado con su versión y estado -->
+            <TextBlock
+                Style="{StaticResource BodyStrongTextBlockStyle}"
+                Text="{x:Bind Item.FilesTitle}"
+                Visibility="{x:Bind Item.HasFiles, Mode=OneWay}" />
+            <ItemsControl
+                Margin="0,0,0,16"
+                ItemsSource="{x:Bind Item.Files}"
+                Visibility="{x:Bind Item.HasFiles, Mode=OneWay}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PackageFileViewModel">
+                        <Grid Margin="0,0,0,4">
+                            <!-- Fondo naranja suave si es beta -->
+                            <Border
+                                Background="{ThemeResource BetaTintBrush}"
+                                BorderBrush="{ThemeResource BetaBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Visibility="{x:Bind IsBeta}" />
+                            <Border Padding="16,12" Style="{StaticResource CardStyle}">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                                    <FontIcon
+                                        FontSize="18"
+                                        Foreground="{ThemeResource AnchorBlueBrush}"
+                                        Glyph="&#xE7C3;" />
+                                    <StackPanel Grid.Column="1" Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                                Text="{x:Bind Label}" />
+                                            <Border Style="{StaticResource Ps4BadgeStyle}" Visibility="{x:Bind IsPs4}">
+                                                <TextBlock
+                                                    FontSize="12"
+                                                    FontWeight="Bold"
+                                                    Foreground="Black"
+                                                    Text="PS4" />
+                                            </Border>
+                                            <StackPanel
+                                                VerticalAlignment="Center"
+                                                Orientation="Horizontal"
+                                                Spacing="4"
+                                                Visibility="{x:Bind IsBeta}">
+                                                <FontIcon
+                                                    FontSize="13"
+                                                    Foreground="{ThemeResource BetaBrush}"
+                                                    Glyph="&#xE7BA;" />
+                                                <TextBlock
+                                                    FontWeight="SemiBold"
+                                                    Foreground="{ThemeResource BetaBrush}"
+                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                    Text="{l:Loc Key=file.beta}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <TextBlock
+                                            Style="{StaticResource CaptionSecondaryTextStyle}"
+                                            Text="{x:Bind FileName}"
+                                            Visibility="{x:Bind HasLabel}" />
+                                        <TextBlock
+                                            Style="{StaticResource CaptionSecondaryTextStyle}"
+                                            Text="{x:Bind Description}"
+                                            Visibility="{x:Bind HasDescription}" />
+                                        <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}">
+                                            <Run Text="{x:Bind StateText}" />
+                                            <Run Text="{x:Bind SizeText}" />
+                                        </TextBlock>
+
+                                        <!-- Progreso de este fichero -->
+                                        <StackPanel
+                                            Margin="0,6,0,0"
+                                            Spacing="4"
+                                            Visibility="{x:Bind IsBusy, Mode=OneWay}">
+                                            <ProgressBar
+                                                MaxWidth="420"
+                                                HorizontalAlignment="Stretch"
+                                                IsIndeterminate="{x:Bind ActiveJob.IsIndeterminate, Mode=OneWay, FallbackValue=True}"
+                                                Value="{x:Bind ActiveJob.ProgressValue, Mode=OneWay, FallbackValue=0}" />
+                                            <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind ActiveJob.StatusText, Mode=OneWay, FallbackValue=''}" />
+                                        </StackPanel>
+                                        <TextBlock
+                                            Margin="0,4,0,0"
+                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Text="{x:Bind ActiveJob.StatusText, Mode=OneWay, FallbackValue=''}"
+                                            TextWrapping="Wrap"
+                                            Visibility="{x:Bind HasJobError, Mode=OneWay}" />
+                                    </StackPanel>
+
+                                    <StackPanel
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal"
+                                        Spacing="8">
+                                        <FontIcon
+                                            FontSize="16"
+                                            Foreground="{ThemeResource AnchorBlueBrush}"
+                                            Glyph="&#xE73E;"
+                                            ToolTipService.ToolTip="{x:Bind StateText}"
+                                            Visibility="{x:Bind IsUpToDate}" />
+                                        <Button
+                                            AutomationProperties.Name="{x:Bind DownloadText}"
+                                            Command="{x:Bind DownloadCommand}"
+                                            Content="{x:Bind DownloadText}"
+                                            Visibility="{x:Bind ShowDownloadButton, Mode=OneWay}" />
+                                        <Button
+                                            AutomationProperties.Name="{l:Loc Key=action.cancel}"
+                                            Command="{x:Bind CancelCommand}"
+                                            Content="{l:Loc Key=action.cancel}"
+                                            Visibility="{x:Bind IsBusy, Mode=OneWay}" />
+                                        <Button
+                                            AutomationProperties.Name="{l:Loc Key=action.retry}"
+                                            Command="{x:Bind RetryCommand}"
+                                            Content="{l:Loc Key=action.retry}"
+                                            Visibility="{x:Bind HasJobError, Mode=OneWay}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
             <!-- Estado -->
             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{l:Loc Key=detail.statusTitle}" />
@@ -340,7 +451,7 @@
                 <Grid
                     ColumnDefinitions="Auto,Auto,*"
                     ColumnSpacing="16"
-                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                    RowDefinitions="Auto,Auto,Auto,Auto,Auto"
                     RowSpacing="14">
                     <FontIcon Glyph="&#xE8EC;" Style="{StaticResource InfoIconStyle}" />
                     <TextBlock Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.version}" />
@@ -350,9 +461,15 @@
                     <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.author}" />
                     <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.Author}" />
 
-                    <FontIcon Grid.Row="2" Glyph="&#xEDA2;" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.size}" />
-                    <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.SizeText}" />
+                    <FontIcon Grid.Row="2" Glyph="&#xE71B;" Style="{StaticResource InfoIconStyle}" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.release}" />
+                    <HyperlinkButton
+                        Grid.Row="2"
+                        Grid.Column="2"
+                        Padding="0"
+                        Content="{x:Bind Item.ReleaseLinkText}"
+                        IsEnabled="{x:Bind Item.HasReleaseUrl}"
+                        NavigateUri="{x:Bind Item.Package.ReleaseUrl}" />
 
                     <FontIcon Grid.Row="3" Glyph="{x:Bind Item.SourceGlyph}" Style="{StaticResource InfoIconStyle}" />
                     <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.source}" />
@@ -362,31 +479,6 @@
                     <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.id}" />
                     <TextBlock Grid.Row="4" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.Id}" />
 
-                    <FontIcon Grid.Row="5" Glyph="&#xE72E;" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="5" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.sha256}" />
-                    <Grid Grid.Row="5" Grid.Column="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock
-                            FontFamily="Cascadia Mono, Consolas"
-                            FontSize="13"
-                            Style="{StaticResource InfoValueStyle}"
-                            Text="{x:Bind Item.Sha256}"
-                            TextWrapping="Wrap" />
-                        <Button
-                            x:Name="CopyShaButton"
-                            Grid.Column="1"
-                            Padding="8"
-                            VerticalAlignment="Center"
-                            AutomationProperties.Name="{l:Loc Key=detail.copy}"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Click="OnCopyShaClick"
-                            ToolTipService.ToolTip="{l:Loc Key=detail.copy}">
-                            <FontIcon
-                                x:Name="CopyShaIcon"
-                                FontSize="14"
-                                Glyph="&#xE8C8;" />
-                        </Button>
-                    </Grid>
                 </Grid>
             </Border>
         </StackPanel>

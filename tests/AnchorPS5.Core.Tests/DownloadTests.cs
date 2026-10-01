@@ -100,7 +100,7 @@ public sealed class DownloadManagerTests : IDisposable
 
         Assert.Equal(DownloadPhase.Completed, job.Phase);
         Assert.True(extractor.Called);
-        Assert.True(File.Exists(Path.Combine(job.InstalledPath!, "extraido.txt")));
+        Assert.True(File.Exists(Path.Combine(job.InstalledPath!, "hola-1.0.0", "extraido.txt")));
     }
 
     [Fact]

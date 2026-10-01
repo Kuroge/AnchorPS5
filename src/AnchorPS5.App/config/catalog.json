@@ -1,50 +1,45 @@
-// Catálogo local de EJEMPLO: apps ficticias para probar la interfaz.
-// Las URLs de descarga y los sha256 no son reales.
-// iconUrl admite una URL https, una ruta absoluta o una ruta relativa a este fichero.
+// Catálogo local: homebrew para PS5 ya en modo homebrew (payloads .elf que se envían a un ELF loader).
+// Con "repo", los ficheros descargables salen de la última release de GitHub (con su SHA-256),
+// sin listarlos aquí: si el autor publica un fichero nuevo, aparece solo.
+// "assets" es opcional: etiquetas y descripciones para los ficheros cuyo nombre encaje (* y ?).
 {
   "schemaVersion": 1,
   "apps": [
     {
-      "id": "com.ejemplo.holamundo",
-      "name": "Hola Mundo",
-      "version": "1.0.0",
-      "author": "Ejemplo",
-      "description": "Homebrew mínimo de ejemplo: muestra un mensaje en pantalla. Útil para comprobar que la consola ejecuta homebrew correctamente.",
-      "iconUrl": "icons/holamundo.png",
-      "downloadUrl": "https://example.com/homebrew/holamundo-1.0.0.zip",
-      "sizeBytes": 524288,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000001"
+      "id": "github:ps5-payload-dev/ftpsrv",
+      "name": "ftpsrv",
+      "author": "ps5-payload-dev",
+      "repo": "ps5-payload-dev/ftpsrv",
+      "description": "Servidor FTP para la consola (puerto 2121). Permite copiar archivos entre el PC y la PS5 con cualquier cliente FTP (FileZilla, curl…).",
+      "iconUrl": "https://avatars.githubusercontent.com/u/166182419?s=256",
+      "assets": [
+        { "match": "*-ps5.elf", "label": "Payload", "description": "Se envía al ELF loader cada vez que quieras usarlo." },
+        { "match": "*-ps5-install.elf", "label": "Instalador", "description": "Lo añade como icono al menú de la consola (necesita websrv)." },
+        { "match": "*-ps4.elf", "label": "Payload", "description": "Versión para PS4." }
+      ]
     },
     {
-      "id": "com.ejemplo.reproductor",
-      "name": "Reproductor multimedia",
-      "version": "2.3.1",
-      "author": "Ejemplo",
-      "description": "Reproduce vídeo y música desde una unidad USB, con soporte de subtítulos y listas de reproducción.",
-      "iconUrl": "icons/reproductor.png",
-      "downloadUrl": "https://example.com/homebrew/reproductor-2.3.1.zip",
-      "sizeBytes": 18874368,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000002"
+      "id": "github:drakmor/nanoDNS",
+      "name": "nanoDNS",
+      "author": "Drakmor",
+      "repo": "drakmor/nanoDNS",
+      "description": "Proxy DNS que se ejecuta en la propia consola, con reglas por dominio y registro de consultas. Su configuración por defecto bloquea los servidores de PlayStation (PSN y actualizaciones); se cambia en /data/nanodns/nanodns.ini.",
+      "iconUrl": "https://avatars.githubusercontent.com/u/1344732?s=256",
+      "assets": [
+        { "match": "nanodns.elf", "label": "Payload" },
+        { "match": "nanodns-ps4.elf", "label": "Payload", "description": "Versión para PS4." }
+      ]
     },
     {
-      "id": "com.ejemplo.explorador",
-      "name": "Explorador de archivos",
-      "version": "0.9.4",
-      "author": "Comunidad",
-      "description": "Navega por las unidades internas y externas, copia y mueve archivos y consulta el espacio libre.",
-      "downloadUrl": "https://example.com/homebrew/explorador-0.9.4.zip",
-      "sizeBytes": 3145728,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000003"
-    },
-    {
-      "id": "com.ejemplo.monitor",
-      "name": "Monitor del sistema",
-      "version": "1.4.0",
-      "author": "Comunidad",
-      "description": "Muestra la temperatura, el uso de CPU y memoria y la velocidad del ventilador en tiempo real.",
-      "downloadUrl": "https://example.com/homebrew/monitor-1.4.0.zip",
-      "sizeBytes": 1048576,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000004"
+      "id": "github:earthonion/garlic-savemgr",
+      "name": "Garlic SaveMgr",
+      "author": "earthonion",
+      "repo": "earthonion/garlic-savemgr",
+      "description": "Gestor local de partidas guardadas con interfaz web: explora, exporta e importa tus saves desde el navegador del PC (http://<ip-de-la-ps5>:8082).",
+      "iconUrl": "https://avatars.githubusercontent.com/u/3332298?s=256",
+      "assets": [
+        { "match": "*.elf", "label": "Payload" }
+      ]
     }
   ]
 }

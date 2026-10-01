@@ -31,7 +31,8 @@ public sealed partial class ShellPage : Page
             App.Localization,
             library,
             App.SeenApps,
-            downloads);
+            downloads,
+            App.PackageResolver);
         _catalog.PropertyChanged += OnCatalogPropertyChanged;
 
         NavView.SelectedItem = CatalogItem;

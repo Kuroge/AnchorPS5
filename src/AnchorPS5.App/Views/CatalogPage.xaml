@@ -50,13 +50,20 @@
             </Button>
         </Grid>
 
-        <InfoBar
-            Grid.Row="1"
-            IsClosable="True"
-            IsOpen="{x:Bind ViewModel.HasSourceErrors, Mode=OneWay}"
-            Message="{x:Bind ViewModel.SourceErrors, Mode=OneWay}"
-            Severity="Warning"
-            Title="{l:Loc Key=catalog.sourceErrors}" />
+        <StackPanel Grid.Row="1" Spacing="8">
+            <InfoBar
+                IsClosable="True"
+                IsOpen="{x:Bind ViewModel.HasSourceErrors, Mode=OneWay}"
+                Message="{x:Bind ViewModel.SourceErrors, Mode=OneWay}"
+                Severity="Warning"
+                Title="{l:Loc Key=catalog.sourceErrors}" />
+            <InfoBar
+                IsClosable="True"
+                IsOpen="{x:Bind ViewModel.HasGitHubWarning, Mode=OneWay}"
+                Message="{x:Bind ViewModel.GitHubWarning, Mode=OneWay}"
+                Severity="Warning"
+                Title="{l:Loc Key=github.title}" />
+        </StackPanel>
 
         <GridView
             Grid.Row="2"
@@ -119,6 +126,21 @@
                                         Foreground="{ThemeResource AnchorBlueBrush}"
                                         Style="{StaticResource CaptionTextBlockStyle}"
                                         Text="{x:Bind VersionText}" />
+                                </Border>
+                                <Border
+                                    Background="{ThemeResource BetaTintBrush}"
+                                    Style="{StaticResource ChipStyle}"
+                                    Visibility="{x:Bind HasBeta}">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <FontIcon
+                                            FontSize="11"
+                                            Foreground="{ThemeResource BetaBrush}"
+                                            Glyph="&#xE7BA;" />
+                                        <TextBlock
+                                            Foreground="{ThemeResource BetaBrush}"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Text="{x:Bind BetaText}" />
+                                    </StackPanel>
                                 </Border>
                                 <Border
                                     Background="{ThemeResource ControlFillColorSecondaryBrush}"

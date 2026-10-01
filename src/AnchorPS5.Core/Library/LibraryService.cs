@@ -84,33 +84,102 @@ public sealed class LibraryService
         return full;
     }
 
+    /// <summary>
+    /// Añade (o sustituye) un fichero en los metadatos de su carpeta de versión.
+    /// Varias descargas de la misma versión conviven en la misma carpeta.
+    /// </summary>
+    public static void RecordFile(string versionDir, string appId, string appName, string version, VersionFileMetadata file)
+    {
+        var metadataFile = Path.Combine(versionDir, VersionMetadata.FileName);
+        var metadata = ReadMetadata(metadataFile) ?? new VersionMetadata();
+        if (metadata.Files.Count == 0)
+            metadata.Files.AddRange(LegacyFiles(versionDir, metadata).Select(ToMetadata));
+
+        metadata.SchemaVersion = 2;
+        metadata.Id = appId;
+        metadata.Name = appName;
+        metadata.Version = version;
+        metadata.Files.RemoveAll(f => string.Equals(f.Key, file.Key, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(f.Path, file.Path, StringComparison.OrdinalIgnoreCase));
+        metadata.Files.Add(file);
+
+        var temp = metadataFile + ".tmp";
+        File.WriteAllText(temp, JsonSerializer.Serialize(metadata, JsonDefaults.Options));
+        File.Move(temp, metadataFile, overwrite: true);
+    }
+
     private static InstalledVersion ReadVersion(string versionDir)
     {
         var folderName = Path.GetFileName(versionDir);
-        var metadataFile = Path.Combine(versionDir, VersionMetadata.FileName);
-        if (File.Exists(metadataFile))
+        var metadata = ReadMetadata(Path.Combine(versionDir, VersionMetadata.FileName));
+        if (metadata is null)
         {
-            try
-            {
-                var metadata = JsonSerializer.Deserialize<VersionMetadata>(File.ReadAllText(metadataFile), JsonDefaults.Options);
-                if (metadata is not null)
-                {
-                    return new InstalledVersion(
-                        string.IsNullOrWhiteSpace(metadata.Version) ? folderName : metadata.Version,
-                        versionDir,
-                        string.IsNullOrWhiteSpace(metadata.Id) ? null : metadata.Id,
-                        metadata.DownloadedAt,
-                        metadata.Verified);
-                }
-            }
-            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
-            {
-                // Metadatos dañados: se usa el nombre de la carpeta.
-            }
+            // Copiada a mano: la versión es el nombre de la carpeta y los ficheros, lo que haya.
+            return new InstalledVersion(folderName, versionDir, null, null, Files: LegacyFiles(versionDir, null, folderName));
         }
 
-        // Copiada a mano: la versión es el nombre de la carpeta.
-        return new InstalledVersion(folderName, versionDir, null, null);
+        var version = string.IsNullOrWhiteSpace(metadata.Version) ? folderName : metadata.Version;
+        var files = metadata.Files.Count > 0
+            ? metadata.Files.Select(f => new InstalledFile(f.Key, f.FileName, f.Path, f.Sha256, f.Verified, f.DownloadedAt, f.Prerelease)).ToList()
+            : LegacyFiles(versionDir, metadata, version);
+
+        return new InstalledVersion(
+            version,
+            versionDir,
+            string.IsNullOrWhiteSpace(metadata.Id) ? null : metadata.Id,
+            files.Select(f => f.DownloadedAt).Max() ?? (metadata.DownloadedAt == default ? null : metadata.DownloadedAt),
+            files.Count > 0 && files.All(f => f.Verified),
+            files);
+    }
+
+    /// <summary>Ficheros de una carpeta sin lista en los metadatos (esquema 1 o copia a mano).</summary>
+    private static List<InstalledFile> LegacyFiles(string versionDir, VersionMetadata? metadata, string? version = null)
+    {
+        version ??= metadata?.Version ?? Path.GetFileName(versionDir);
+        var entries = Directory.EnumerateFileSystemEntries(versionDir)
+            .Select(Path.GetFileName)
+            .Where(name => name is not null && !string.Equals(name, VersionMetadata.FileName, StringComparison.OrdinalIgnoreCase))
+            .Cast<string>()
+            .ToList();
+
+        // En el esquema 1 había un único fichero: hereda el sha256 y la fecha.
+        var single = entries.Count == 1 && metadata is not null;
+        return entries
+            .Select(name => new InstalledFile(
+                Packages.AssetClassifier.GetKey(name, version),
+                name,
+                name,
+                single ? metadata!.Sha256 : null,
+                single && metadata!.Verified,
+                metadata is not null && metadata.DownloadedAt != default ? metadata.DownloadedAt : null,
+                IsPrerelease: false))
+            .ToList();
+    }
+
+    private static VersionFileMetadata ToMetadata(InstalledFile file) => new()
+    {
+        Key = file.Key,
+        FileName = file.FileName,
+        Path = file.RelativePath,
+        Sha256 = file.Sha256,
+        Verified = file.Verified,
+        DownloadedAt = file.DownloadedAt ?? default,
+        Prerelease = file.IsPrerelease,
+    };
+
+    private static VersionMetadata? ReadMetadata(string metadataFile)
+    {
+        try
+        {
+            return File.Exists(metadataFile)
+                ? JsonSerializer.Deserialize<VersionMetadata>(File.ReadAllText(metadataFile), JsonDefaults.Options)
+                : null;
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
+            // Metadatos dañados: se trata como copia a mano.
+            return null;
+        }
     }
 }
 

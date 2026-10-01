@@ -1,4 +1,4 @@
-using AnchorPS5.Core.Models;
+using AnchorPS5.Core.Packages;
 
 namespace AnchorPS5.Core.Library;
 
@@ -9,23 +9,78 @@ public enum PackageState
     UpdateAvailable,
 }
 
-/// <summary>Estado de una app del catálogo frente a lo descargado.</summary>
-public sealed record PackageStatus(PackageState State, IReadOnlyList<InstalledVersion> Versions)
+public enum FileState
+{
+    NotDownloaded,
+    UpToDate,
+    UpdateAvailable,
+    /// <summary>Lo tienes descargado pero la última release ya no lo incluye.</summary>
+    NoLongerPublished,
+    /// <summary>No se sabe qué hay publicado (GitHub no disponible y sin caché).</summary>
+    Unknown,
+}
+
+/// <summary>Un fichero descargado junto con la carpeta de versión en la que está.</summary>
+public sealed record InstalledFileRef(InstalledFile File, InstalledVersion Version);
+
+/// <summary>Estado de un fichero: lo publicado frente a lo que tienes.</summary>
+/// <param name="CountsForUpdate">
+/// Si su actualización cuenta para la app. Una beta solo cuenta si ya usas la beta de ese
+/// fichero o si no existe versión estable de él.
+/// </param>
+public sealed record FileStatus(string Key, PackageFile? Available, InstalledFileRef? Installed, FileState State, bool CountsForUpdate);
+
+/// <summary>Estado de una app del catálogo frente a lo descargado, fichero a fichero.</summary>
+public sealed record PackageStatus(PackageState State, IReadOnlyList<InstalledVersion> Versions, IReadOnlyList<FileStatus> Files)
 {
     /// <summary>La versión descargada más reciente, o null.</summary>
     public InstalledVersion? Latest => Versions.Count > 0 ? Versions[0] : null;
 
-    /// <param name="versions">De más nueva a más antigua (como devuelve LibrarySnapshot).</param>
-    public static PackageStatus Compute(HomebrewApp app, IReadOnlyList<InstalledVersion> versions)
-    {
-        if (versions.Count == 0)
-            return new PackageStatus(PackageState.NotDownloaded, versions);
+    /// <summary>Ficheros con actualización que cuentan para la app.</summary>
+    public IEnumerable<FileStatus> Updates => Files.Where(f => f.State == FileState.UpdateAvailable && f.CountsForUpdate);
 
-        var catalogVersion = AppVersion.Parse(app.Version);
-        var state = !string.IsNullOrWhiteSpace(app.Version) && catalogVersion > versions[0].ParsedVersion
-            ? PackageState.UpdateAvailable
+    /// <param name="versions">De más nueva a más antigua (como devuelve LibrarySnapshot).</param>
+    public static PackageStatus Compute(ResolvedPackage package, IReadOnlyList<InstalledVersion> versions)
+    {
+        // Lo más nuevo que tienes de cada fichero.
+        var installed = new Dictionary<string, InstalledFileRef>(StringComparer.OrdinalIgnoreCase);
+        foreach (var version in versions)
+        foreach (var file in version.Files)
+            installed.TryAdd(file.Key, new InstalledFileRef(file, version));
+
+        var stableKeys = package.Files.Where(f => !f.IsPrerelease).Select(f => f.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var rows = new List<FileStatus>();
+
+        foreach (var file in package.Files)
+        {
+            installed.TryGetValue(file.Key, out var mine);
+            var fileState = mine is null ? FileState.NotDownloaded
+                : AppVersion.Parse(file.Version) > mine.Version.ParsedVersion ? FileState.UpdateAvailable
+                : FileState.UpToDate;
+            var counts = !file.IsPrerelease || mine?.File.IsPrerelease == true || !stableKeys.Contains(file.Key);
+            rows.Add(new FileStatus(file.Key, file, mine, fileState, counts));
+        }
+
+        // Lo que tienes y ya no se publica (solo si se sabe qué hay publicado).
+        var publishedKeys = package.Files.Select(f => f.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, mine) in installed)
+        {
+            if (publishedKeys.Contains(key))
+                continue;
+            rows.Add(new FileStatus(key, null, mine, package.Files.Count == 0 ? FileState.Unknown : FileState.NoLongerPublished, false));
+        }
+
+        // Sin lista de ficheros (no se sabe qué hay publicado, o carpetas copiadas a mano
+        // sin contenido reconocible) se compara la versión de la app con la descargada.
+        var compareWholeApp = versions.Count > 0
+            && (package.Files.Count == 0 || versions.All(v => v.Files.Count == 0))
+            && package.DisplayVersion is { Length: > 0 } published
+            && AppVersion.Parse(published) > versions[0].ParsedVersion;
+
+        var state = versions.Count == 0 ? PackageState.NotDownloaded
+            : compareWholeApp || rows.Any(r => r.State == FileState.UpdateAvailable && r.CountsForUpdate) ? PackageState.UpdateAvailable
             : PackageState.Downloaded;
 
-        return new PackageStatus(state, versions);
+        return new PackageStatus(state, versions, rows);
     }
 }

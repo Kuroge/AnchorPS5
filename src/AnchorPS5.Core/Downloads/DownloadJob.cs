@@ -1,4 +1,5 @@
 using AnchorPS5.Core.Models;
+using AnchorPS5.Core.Packages;
 
 namespace AnchorPS5.Core.Downloads;
 
@@ -34,15 +35,18 @@ public sealed class DownloadJob
 {
     private CancellationTokenSource _cts = new();
 
-    internal DownloadJob(HomebrewApp app)
+    internal DownloadJob(HomebrewApp app, PackageFile file)
     {
         App = app;
-        Version = app.Version;
+        File = file;
     }
 
     public HomebrewApp App { get; }
 
-    public string Version { get; }
+    /// <summary>El fichero concreto de la release que se descarga.</summary>
+    public PackageFile File { get; }
+
+    public string Version => File.Version;
 
     public DownloadPhase Phase { get; private set; } = DownloadPhase.Queued;
 

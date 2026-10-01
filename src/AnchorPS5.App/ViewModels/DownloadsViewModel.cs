@@ -32,6 +32,8 @@ public sealed partial class DownloadJobViewModel : ObservableObject
 
     public string VersionText => "v" + Job.Version;
 
+    public string FileName => Job.File.FileName;
+
     [ObservableProperty]
     public partial double ProgressValue { get; private set; }
 
@@ -135,9 +137,9 @@ public sealed partial class DownloadsViewModel : ObservableObject
     public DownloadJobViewModel? Find(DownloadJob job) => Jobs.FirstOrDefault(j => ReferenceEquals(j.Job, job));
 
     /// <summary>Empieza (o reutiliza) la descarga de una app y la añade a la lista.</summary>
-    public DownloadJobViewModel Start(Core.Models.HomebrewApp app)
+    public DownloadJobViewModel Start(Core.Models.HomebrewApp app, Core.Packages.PackageFile file)
     {
-        var job = _manager.Enqueue(app);
+        var job = _manager.Enqueue(app, file);
         var vm = Find(job);
         if (vm is null)
         {

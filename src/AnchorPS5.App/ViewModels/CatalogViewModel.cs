@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using AnchorPS5.Core.Catalog;
+using AnchorPS5.Core.GitHub;
 using AnchorPS5.Core.Library;
+using AnchorPS5.Core.Packages;
 using AnchorPS5.Core.Localization;
 using AnchorPS5.Core.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -17,6 +19,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
     private readonly LibraryService _library;
     private readonly SeenAppsService _seenApps;
     private readonly DownloadsViewModel _downloads;
+    private readonly PackageResolver _resolver;
 
     // Nuevas en esta sesión: se mantienen aunque se recargue.
     private readonly HashSet<string> _newIds = new(StringComparer.OrdinalIgnoreCase);
@@ -28,8 +31,10 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         LocalizationService localization,
         LibraryService library,
         SeenAppsService seenApps,
-        DownloadsViewModel downloads)
+        DownloadsViewModel downloads,
+        PackageResolver resolver)
     {
+        _resolver = resolver;
         _loader = loader;
         _sources = sources;
         _localization = localization;
@@ -84,6 +89,33 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
 
     public bool HasSourceErrors => SourceErrors.Length > 0;
 
+    /// <summary>Aviso de GitHub (límite de la API alcanzado o datos sin conexión).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGitHubWarning))]
+    public partial string GitHubWarning { get; set; } = string.Empty;
+
+    public bool HasGitHubWarning => GitHubWarning.Length > 0;
+
+    private string BuildGitHubWarning(IReadOnlyList<ResolvedPackage> packages)
+    {
+        if (packages.Any(p => p.Source == GitHubStatus.RateLimited))
+        {
+            var reset = _resolver.LastRateLimitReset;
+            return reset is { } at
+                ? _localization.Format("github.rateLimitedUntil", at.ToLocalTime().ToString("t", System.Globalization.CultureInfo.CurrentCulture))
+                : _localization.Get("github.rateLimited");
+        }
+
+        return packages.Any(p => p.Source is GitHubStatus.FromCache or GitHubStatus.Error)
+            ? _localization.Get("github.offline")
+            : string.Empty;
+    }
+
+    private static bool SameFile(DownloadJobViewModel job, CatalogItemViewModel item, PackageFileViewModel file) =>
+        string.Equals(job.Job.App.Id, item.Id, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(job.Job.File.Key, file.Key, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(job.Job.File.Version, file.File?.Version, StringComparison.OrdinalIgnoreCase);
+
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
     partial void OnSortIndexChanged(int value) => ApplyFilter();
@@ -109,27 +141,38 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         CountText = string.Empty;
         Items.Clear();
 
+        GitHubWarning = string.Empty;
+
         var loadCatalog = _loader.LoadAllAsync(_sources);
         var scanLibrary = Task.Run(_library.Scan);
         var result = await loadCatalog;
+
+        // Ficheros publicados de cada app (de GitHub si trae repo), en paralelo.
+        var packages = await Task.WhenAll(result.Entries.Select(e => _resolver.ResolveAsync(e.App)));
         var library = await scanLibrary;
         _newIds.UnionWith(await Task.Run(() => _seenApps.RegisterAndGetNew(result.Entries.Select(e => e.App.Id))));
         IsLoading = false;
 
         _all = result.Entries
-            .Select(e => new CatalogItemViewModel(
+            .Select((e, i) => new CatalogItemViewModel(
                 e,
+                packages[i],
                 _localization,
                 this,
-                PackageStatus.Compute(e.App, library.GetVersions(e.App)),
+                PackageStatus.Compute(packages[i], library.GetVersions(e.App)),
                 _newIds.Contains(e.App.Id),
                 _library.GetAppFolder(e.App)))
             .ToList();
 
         // Descargas que siguen en marcha (o fallidas) tras recargar.
         foreach (var item in _all)
-            item.ActiveJob = _downloads.Jobs.FirstOrDefault(j => string.Equals(j.Job.App.Id, item.Id, StringComparison.OrdinalIgnoreCase));
+        {
+            foreach (var file in item.Files)
+                file.ActiveJob = _downloads.Jobs.FirstOrDefault(j => SameFile(j, item, file));
+            item.RefreshActiveJob();
+        }
 
+        GitHubWarning = BuildGitHubWarning(packages);
         UpdateCounts();
 
         SourceErrors = string.Join(Environment.NewLine, result.FailedSources.Select(f =>
@@ -167,14 +210,12 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
 
     // ---- Acciones sobre paquetes ----
 
-    public void Download(CatalogItemViewModel item) => item.ActiveJob = _downloads.Start(item.Entry.App);
-
-    public void Retry(CatalogItemViewModel item)
+    public void Download(CatalogItemViewModel item, PackageFileViewModel file)
     {
-        if (item.ActiveJob is { } job)
-            _downloads.Retry(job);
-        else
-            Download(item);
+        if (file.File is null)
+            return;
+        file.ActiveJob = _downloads.Start(item.Entry.App, file.File);
+        item.RefreshActiveJob();
     }
 
     public void OpenFolder(string path)
@@ -221,9 +262,13 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         if (item is null)
             return;
 
-        // Las fallidas se quedan enlazadas para mostrar el error y reintentar.
+        // Las fallidas se quedan enlazadas a su fichero para mostrar el error y reintentar.
         if (!job.IsFailed)
-            item.ActiveJob = null;
+        {
+            foreach (var file in item.Files.Where(f => ReferenceEquals(f.ActiveJob, job)))
+                file.ActiveJob = null;
+        }
+
         await RefreshItemAsync(item);
     }
 
@@ -231,7 +276,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
     private async Task RefreshItemAsync(CatalogItemViewModel item)
     {
         var library = await Task.Run(_library.Scan);
-        item.SetStatus(PackageStatus.Compute(item.Entry.App, library.GetVersions(item.Entry.App)));
+        item.SetStatus(PackageStatus.Compute(item.Package, library.GetVersions(item.Entry.App)));
         UpdateCounts();
 
         // En "Descargadas" o "Actualizaciones" la app puede entrar o salir de la sección.

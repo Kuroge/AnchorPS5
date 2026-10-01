@@ -3,6 +3,7 @@ using AnchorPS5.Core.Catalog;
 using AnchorPS5.Core.Configuration;
 using AnchorPS5.Core.Library;
 using AnchorPS5.Core.Models;
+using AnchorPS5.Core.Packages;
 
 namespace AnchorPS5.Core.Tests;
 
@@ -108,9 +109,9 @@ public sealed class LibraryServiceTests : IDisposable
         var monitor = App("m", "Monitor", "1.4.0");
         var explorador = App("e", "Explorador", "0.9.4");
 
-        Assert.Equal(PackageState.UpdateAvailable, PackageStatus.Compute(reproductor, library.GetVersions(reproductor)).State);
-        Assert.Equal(PackageState.Downloaded, PackageStatus.Compute(monitor, library.GetVersions(monitor)).State);
-        Assert.Equal(PackageState.NotDownloaded, PackageStatus.Compute(explorador, library.GetVersions(explorador)).State);
+        Assert.Equal(PackageState.UpdateAvailable, PackageStatus.Compute(PackageResolver.FromStatic(reproductor), library.GetVersions(reproductor)).State);
+        Assert.Equal(PackageState.Downloaded, PackageStatus.Compute(PackageResolver.FromStatic(monitor), library.GetVersions(monitor)).State);
+        Assert.Equal(PackageState.NotDownloaded, PackageStatus.Compute(PackageResolver.FromStatic(explorador), library.GetVersions(explorador)).State);
     }
 
     [Fact]
@@ -119,7 +120,7 @@ public sealed class LibraryServiceTests : IDisposable
         CreateVersion("App", "3.0");
         var app = App("a", "App", "2.0");
 
-        Assert.Equal(PackageState.Downloaded, PackageStatus.Compute(app, new LibraryService(_downloads).Scan().GetVersions(app)).State);
+        Assert.Equal(PackageState.Downloaded, PackageStatus.Compute(PackageResolver.FromStatic(app), new LibraryService(_downloads).Scan().GetVersions(app)).State);
     }
 
     [Fact]

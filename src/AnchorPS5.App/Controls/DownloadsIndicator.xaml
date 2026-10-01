@@ -46,6 +46,8 @@
                                     <TextBlock TextTrimming="CharacterEllipsis">
                                         <Run FontWeight="SemiBold" Text="{x:Bind Name}" />
                                         <Run Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind VersionText}" />
+                                        <LineBreak />
+                                        <Run FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Text="{x:Bind FileName}" />
                                     </TextBlock>
                                     <ProgressBar
                                         Grid.Row="1"

@@ -1,17 +1,17 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
-using System.Text.Json;
-using AnchorPS5.Core.Configuration;
 using AnchorPS5.Core.Library;
 using AnchorPS5.Core.Models;
+using AnchorPS5.Core.Packages;
 
 namespace AnchorPS5.Core.Downloads;
 
 /// <summary>
-/// Cola de descargas. Cada descarga: bajar (con progreso y SHA-256 al vuelo) → verificar
-/// → extraer con 7-Zip → mover a &lt;App&gt;\&lt;versión&gt;. Todo se prepara en una carpeta
-/// temporal dentro de la de descargas y solo se mueve al final, así nunca queda una
-/// versión a medias.
+/// Cola de descargas de ficheros concretos. Cada descarga: bajar (con progreso y
+/// SHA-256 al vuelo) → verificar → extraer con 7-Zip → añadir a &lt;App&gt;\&lt;versión&gt;.
+/// Todo se prepara en una carpeta temporal dentro de la de descargas y solo se mueve al
+/// final, así nunca queda un fichero a medias. Varios ficheros de la misma versión
+/// conviven en su carpeta.
 /// </summary>
 public sealed class DownloadManager
 {
@@ -22,6 +22,7 @@ public sealed class DownloadManager
     private readonly LibraryService _library;
     private readonly IArchiveExtractor _extractor;
     private readonly SemaphoreSlim _slots;
+    private readonly SemaphoreSlim _finalize = new(1, 1);
     private readonly List<DownloadJob> _jobs = [];
     private readonly Lock _lock = new();
 
@@ -37,23 +38,26 @@ public sealed class DownloadManager
     /// <summary>Se lanza (desde un hilo de fondo) cuando una descarga termina, falla o se cancela.</summary>
     public event EventHandler<DownloadJob>? JobFinished;
 
-    /// <summary>Descarga en curso (o en cola) de una app, si la hay.</summary>
-    public DownloadJob? GetActiveJob(string appId)
+    /// <summary>Descargas en curso (o en cola) de una app.</summary>
+    public IReadOnlyList<DownloadJob> GetActiveJobs(string appId)
     {
         lock (_lock)
-            return FindActive(appId);
+            return _jobs.Where(j => j.IsActive && SameApp(j, appId)).ToList();
     }
 
-    /// <summary>Pone en cola la versión del catálogo. Si ya se está descargando, devuelve esa descarga.</summary>
-    public DownloadJob Enqueue(HomebrewApp app)
+    /// <summary>Pone en cola un fichero. Si ya se está descargando, devuelve esa descarga.</summary>
+    public DownloadJob Enqueue(HomebrewApp app, PackageFile file)
     {
         DownloadJob job;
         lock (_lock)
         {
-            if (FindActive(app.Id) is { } existing)
+            var existing = _jobs.LastOrDefault(j => j.IsActive && SameApp(j, app.Id)
+                && string.Equals(j.File.Key, file.Key, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(j.File.Version, file.Version, StringComparison.OrdinalIgnoreCase));
+            if (existing is not null)
                 return existing;
 
-            job = new DownloadJob(app);
+            job = new DownloadJob(app, file);
             _jobs.Add(job);
         }
 
@@ -61,8 +65,13 @@ public sealed class DownloadManager
         return job;
     }
 
-    private DownloadJob? FindActive(string appId) =>
-        _jobs.LastOrDefault(j => j.IsActive && string.Equals(j.App.Id, appId, StringComparison.OrdinalIgnoreCase));
+    /// <summary>Descarga única de una app fuera de GitHub (downloadUrl del catálogo).</summary>
+    public DownloadJob Enqueue(HomebrewApp app)
+    {
+        var file = PackageResolver.FromStatic(app).Files.FirstOrDefault()
+            ?? new PackageFile(app.Id, app.DownloadUrl, app.DownloadUrl, app.SizeBytes, null, app.Version, false, ConsolePlatform.Unknown);
+        return Enqueue(app, file);
+    }
 
     /// <summary>Vuelve a intentar una descarga fallida o cancelada.</summary>
     public void Retry(DownloadJob job)
@@ -73,6 +82,9 @@ public sealed class DownloadManager
         job.ResetForRetry();
         _ = RunAsync(job);
     }
+
+    private static bool SameApp(DownloadJob job, string appId) =>
+        string.Equals(job.App.Id, appId, StringComparison.OrdinalIgnoreCase);
 
     private async Task RunAsync(DownloadJob job)
     {
@@ -85,10 +97,10 @@ public sealed class DownloadManager
             await _slots.WaitAsync(token);
             acquired = true;
 
-            if (!Uri.TryCreate(job.App.DownloadUrl, UriKind.Absolute, out var url)
+            if (!Uri.TryCreate(job.File.Url, UriKind.Absolute, out var url)
                 || (url.Scheme != Uri.UriSchemeHttps && url.Scheme != Uri.UriSchemeHttp))
             {
-                job.Fail(DownloadError.InvalidUrl, job.App.DownloadUrl);
+                job.Fail(DownloadError.InvalidUrl, job.File.Url);
                 return;
             }
 
@@ -96,7 +108,7 @@ public sealed class DownloadManager
             var (filePath, sha256) = await DownloadAsync(job, url, workDir, token);
 
             job.SetPhase(DownloadPhase.Verifying);
-            var expected = job.App.Sha256?.Trim();
+            var expected = job.File.Sha256?.Trim();
             var verified = !string.IsNullOrEmpty(expected);
             if (verified && !string.Equals(expected, sha256, StringComparison.OrdinalIgnoreCase))
             {
@@ -104,14 +116,19 @@ public sealed class DownloadManager
                 return;
             }
 
+            // Lo que se añadirá a la carpeta de la versión: el fichero tal cual o, si es
+            // un comprimido, una subcarpeta con su nombre y lo extraído dentro.
             job.SetPhase(DownloadPhase.Extracting);
-            var contentDir = Path.Combine(workDir, "content");
-            Directory.CreateDirectory(contentDir);
+            string entryName;
+            string entryPath;
             if (ArchiveTypes.IsArchive(filePath))
             {
+                entryName = PathNames.Sanitize(ArchiveBaseName(Path.GetFileName(filePath)));
+                entryPath = Path.Combine(workDir, "content", entryName);
+                Directory.CreateDirectory(entryPath);
                 try
                 {
-                    await _extractor.ExtractAsync(filePath, contentDir, token);
+                    await _extractor.ExtractAsync(filePath, entryPath, token);
                 }
                 catch (ExtractionException ex)
                 {
@@ -121,18 +138,44 @@ public sealed class DownloadManager
             }
             else
             {
-                File.Move(filePath, Path.Combine(contentDir, Path.GetFileName(filePath)));
+                entryName = Path.GetFileName(filePath);
+                entryPath = filePath;
             }
 
-            WriteMetadata(job, contentDir, url, sha256, verified);
+            var versionDir = _library.GetVersionFolder(job.App, job.Version);
+            await _finalize.WaitAsync(CancellationToken.None);
+            try
+            {
+                Directory.CreateDirectory(versionDir);
+                var target = Path.Combine(versionDir, entryName);
+                if (Directory.Exists(target))
+                    Directory.Delete(target, recursive: true); // mismo fichero: se reemplaza
+                else if (File.Exists(target))
+                    File.Delete(target);
 
-            var finalDir = _library.GetVersionFolder(job.App, job.Version);
-            Directory.CreateDirectory(Path.GetDirectoryName(finalDir)!);
-            if (Directory.Exists(finalDir))
-                Directory.Delete(finalDir, recursive: true); // misma versión: se reemplaza
-            Directory.Move(contentDir, finalDir);
+                if (Directory.Exists(entryPath))
+                    Directory.Move(entryPath, target);
+                else
+                    File.Move(entryPath, target);
 
-            job.Complete(finalDir);
+                LibraryService.RecordFile(versionDir, job.App.Id, job.App.Name, job.Version, new VersionFileMetadata
+                {
+                    Key = job.File.Key,
+                    FileName = job.File.FileName,
+                    Path = entryName,
+                    DownloadUrl = url.AbsoluteUri,
+                    Sha256 = sha256,
+                    Verified = verified,
+                    DownloadedAt = DateTimeOffset.Now,
+                    Prerelease = job.File.IsPrerelease,
+                });
+            }
+            finally
+            {
+                _finalize.Release();
+            }
+
+            job.Complete(versionDir);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
@@ -168,9 +211,10 @@ public sealed class DownloadManager
         if (!response.IsSuccessStatusCode)
             throw new HttpRequestException($"HTTP {(int)response.StatusCode} {response.ReasonPhrase}", null, response.StatusCode);
 
-        job.SetTotal(response.Content.Headers.ContentLength ?? (job.App.SizeBytes > 0 ? job.App.SizeBytes : null));
+        job.SetTotal(response.Content.Headers.ContentLength ?? (job.File.SizeBytes > 0 ? job.File.SizeBytes : null));
 
-        var fileName = GetFileName(response, url);
+        // Se guarda con el nombre publicado; si no se conoce, el de la respuesta o la URL.
+        var fileName = !string.IsNullOrWhiteSpace(job.File.FileName) ? PathNames.Sanitize(job.File.FileName) : GetFileName(response, url);
         var filePath = Path.Combine(workDir, fileName);
 
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
@@ -200,6 +244,13 @@ public sealed class DownloadManager
         return (filePath, Convert.ToHexStringLower(hash.GetHashAndReset()));
     }
 
+    /// <summary>"app-1.2.tar.gz" → "app-1.2"; "app.zip" → "app".</summary>
+    private static string ArchiveBaseName(string fileName)
+    {
+        var name = Path.GetFileNameWithoutExtension(fileName);
+        return name.EndsWith(".tar", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
+    }
+
     /// <summary>Nombre del fichero: el de Content-Disposition o el último tramo de la URL.</summary>
     private static string GetFileName(HttpResponseMessage response, Uri url)
     {
@@ -210,21 +261,6 @@ public sealed class DownloadManager
 
         name = Path.GetFileName(name ?? string.Empty);
         return string.IsNullOrWhiteSpace(name) ? "download.bin" : PathNames.Sanitize(name);
-    }
-
-    private static void WriteMetadata(DownloadJob job, string contentDir, Uri url, string sha256, bool verified)
-    {
-        var metadata = new VersionMetadata
-        {
-            Id = job.App.Id,
-            Name = job.App.Name,
-            Version = job.Version,
-            DownloadedAt = DateTimeOffset.Now,
-            DownloadUrl = url.AbsoluteUri,
-            Sha256 = sha256,
-            Verified = verified,
-        };
-        File.WriteAllText(Path.Combine(contentDir, VersionMetadata.FileName), JsonSerializer.Serialize(metadata, JsonDefaults.Options));
     }
 
     private static void TryDelete(string directory)
