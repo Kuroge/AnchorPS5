@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="AnchorPS5.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="AnchorPS5">
+
+    <!-- Contenido en fases posteriores (los textos llegarán vía i18n). -->
+    <Grid />
+</Window>

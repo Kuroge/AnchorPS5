@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AnchorPS5.App/AnchorPS5.App.csproj" />
+    <Project Path="src/AnchorPS5.Core/AnchorPS5.Core.csproj" />
+  </Folder>
+</Solution>

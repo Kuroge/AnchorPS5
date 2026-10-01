@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <Authors>cheyen2008</Authors>
+    <Company>cheyen2008</Company>
+    <Product>AnchorPS5</Product>
+    <Copyright>© cheyen2008</Copyright>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Interfaz WinUI 3 sin empaquetar (MSIX no): carpeta portable con config/, lang/ e intro/ junto al exe. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>AnchorPS5.App</RootNamespace>
+    <AssemblyName>AnchorPS5</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AnchorPS5.Core\AnchorPS5.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Ficheros portables: se copian tal cual a la salida (config.json no se incluye: se crea al arrancar). -->
+  <ItemGroup>
+    <Content Include="config\**;lang\**;intro\**" Exclude="**\.gitkeep;config\config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Garantiza las carpetas portables aunque aún estén vacías. -->
+  <Target Name="CreatePortableFolders" AfterTargets="Build">
+    <MakeDir Directories="$(OutDir)config;$(OutDir)lang;$(OutDir)intro" />
+  </Target>
+  <Target Name="CreatePortableFoldersOnPublish" AfterTargets="Publish">
+    <MakeDir Directories="$(PublishDir)config;$(PublishDir)lang;$(PublishDir)intro" />
+  </Target>
+
+</Project>
