@@ -98,6 +98,37 @@ public sealed class PackageResolverTests
     }
 
     [Fact]
+    public void DecimalNumbering_OlderBeta_IsNotShown()
+    {
+        // Caso real de Garlic: 1.6 → 1.61b → 1.62b (betas) → 1.7. 1.62 > 1.7 por números, pero es anterior.
+        var garlic = new HomebrewApp { Id = "garlic", Repo = "earthonion/garlic-savemgr" };
+        var releases = new[]
+        {
+            Release("v1.7", false, 16, "garlic-savemgr.elf"),
+            Release("v1.62b", true, 15, "garlic-savemgr.elf"),
+            Release("v1.61b", true, 14, "garlic-savemgr.elf"),
+            Release("v1.6", false, 13, "garlic-savemgr.elf"),
+        };
+
+        var package = PackageResolver.FromReleases(garlic, releases, GitHubStatus.Ok);
+
+        Assert.Equal("1.7", package.StableVersion);
+        Assert.Null(package.BetaVersion);
+        Assert.Single(package.Files);
+    }
+
+    [Fact]
+    public void BetaPublishedAfterStable_IsShown_EvenWithLowerNumber()
+    {
+        var app = new HomebrewApp { Id = "a", Repo = "o/r" };
+
+        var package = PackageResolver.FromReleases(app,
+            [Release("v1.7", false, 16, "a.elf"), Release("v1.71b", true, 20, "a.elf")], GitHubStatus.Ok);
+
+        Assert.Equal("1.71b", package.BetaVersion);
+    }
+
+    [Fact]
     public void HiddenRule_RemovesFile()
     {
         var app = new HomebrewApp { Id = "a", Repo = "o/r", Assets = [new AssetRule { Match = "*debug*", Hidden = true }] };
@@ -151,6 +182,39 @@ public sealed class FileStatusTests
         Assert.Equal(FileState.NotDownloaded, status.Files.Single(f => f.Key == "ftpsrv-ps5-extra.elf").State);
         Assert.Equal(PackageState.UpdateAvailable, status.State);
     }
+
+    [Fact]
+    public void ReleaseDates_DecideUpdates_OverVersionNumbers()
+    {
+        var march = (int day) => new DateTimeOffset(2026, 3, day, 0, 0, 0, TimeSpan.Zero);
+        var latest = new PackageFile("garlic-savemgr.elf", "garlic-savemgr.elf", "https://x", 1, null, "1.7", false, ConsolePlatform.Unknown, ReleasedAt: march(16));
+        var package = new ResolvedPackage([latest], "1.7", null, null, GitHubStatus.Ok);
+
+        InstalledVersion With(string version, int day) => new(version, @"C:\d\" + version, "garlic", null,
+            Files: [new InstalledFile("garlic-savemgr.elf", "garlic-savemgr.elf", "garlic-savemgr.elf", null, true, null, false, march(day))]);
+
+        // Tienes la 1.62b (15 mar): la 1.7 (16 mar) es más nueva aunque 62 > 7.
+        Assert.Equal(PackageState.UpdateAvailable, PackageStatus.Compute(package, [With("1.62b", 15)]).State);
+
+        // Tienes la 1.7 y la 1.62b: la última que tienes es la 1.7 → al día.
+        var both = PackageStatus.Compute(package, [With("1.62b", 15), With("1.7", 16)]);
+        Assert.Equal(PackageState.Downloaded, both.State);
+        Assert.Equal("1.7", both.Files.Single().Installed!.Version.Version);
+    }
+
+    [Theory]
+    [InlineData("1.7", 16, "1.62b", 15, 1)]
+    [InlineData("1.62b", 15, "1.7", 16, -1)]
+    [InlineData("v1.7", 16, "1.7", 10, 0)]   // misma versión: iguales aunque cambie la fecha
+    public void ReleaseOrder_UsesDates(string a, int dayA, string b, int dayB, int expected)
+    {
+        var march = (int day) => new DateTimeOffset(2026, 3, day, 0, 0, 0, TimeSpan.Zero);
+        Assert.Equal(expected, Math.Sign(ReleaseOrder.Compare(a, march(dayA), b, march(dayB))));
+    }
+
+    [Fact]
+    public void ReleaseOrder_WithoutDates_UsesVersion() =>
+        Assert.True(ReleaseOrder.IsNewer("1.10", null, "1.9", null));
 
     [Fact]
     public void FileNoLongerPublished_IsKept()

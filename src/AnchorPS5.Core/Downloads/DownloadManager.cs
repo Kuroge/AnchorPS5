@@ -168,6 +168,7 @@ public sealed class DownloadManager
                     Verified = verified,
                     DownloadedAt = DateTimeOffset.Now,
                     Prerelease = job.File.IsPrerelease,
+                    ReleasedAt = job.File.ReleasedAt,
                 });
             }
             finally

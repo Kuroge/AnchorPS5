@@ -42,11 +42,15 @@ public sealed record PackageStatus(PackageState State, IReadOnlyList<InstalledVe
     /// <param name="versions">De más nueva a más antigua (como devuelve LibrarySnapshot).</param>
     public static PackageStatus Compute(ResolvedPackage package, IReadOnlyList<InstalledVersion> versions)
     {
-        // Lo más nuevo que tienes de cada fichero.
+        // Lo más nuevo que tienes de cada fichero (por fecha de release si se conoce).
         var installed = new Dictionary<string, InstalledFileRef>(StringComparer.OrdinalIgnoreCase);
         foreach (var version in versions)
         foreach (var file in version.Files)
-            installed.TryAdd(file.Key, new InstalledFileRef(file, version));
+        {
+            var candidate = new InstalledFileRef(file, version);
+            if (!installed.TryGetValue(file.Key, out var current) || IsNewer(candidate, current))
+                installed[file.Key] = candidate;
+        }
 
         var stableKeys = package.Files.Where(f => !f.IsPrerelease).Select(f => f.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var rows = new List<FileStatus>();
@@ -55,7 +59,7 @@ public sealed record PackageStatus(PackageState State, IReadOnlyList<InstalledVe
         {
             installed.TryGetValue(file.Key, out var mine);
             var fileState = mine is null ? FileState.NotDownloaded
-                : AppVersion.Parse(file.Version) > mine.Version.ParsedVersion ? FileState.UpdateAvailable
+                : ReleaseOrder.IsNewer(file.Version, file.ReleasedAt, mine.Version.Version, mine.File.ReleasedAt) ? FileState.UpdateAvailable
                 : FileState.UpToDate;
             var counts = !file.IsPrerelease || mine?.File.IsPrerelease == true || !stableKeys.Contains(file.Key);
             rows.Add(new FileStatus(file.Key, file, mine, fileState, counts));
@@ -83,4 +87,7 @@ public sealed record PackageStatus(PackageState State, IReadOnlyList<InstalledVe
 
         return new PackageStatus(state, versions, rows);
     }
+
+    private static bool IsNewer(InstalledFileRef a, InstalledFileRef b) =>
+        ReleaseOrder.IsNewer(a.Version.Version, a.File.ReleasedAt, b.Version.Version, b.File.ReleasedAt);
 }

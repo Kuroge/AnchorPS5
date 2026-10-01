@@ -10,6 +10,7 @@ public enum ConsolePlatform
 /// <summary>Un fichero descargable de una app en una versión concreta.</summary>
 /// <param name="Key">Identifica el fichero entre versiones: su nombre sin la versión ("app-v1.2.zip" → "app.zip").</param>
 /// <param name="Order">Posición de su regla en "assets" del catálogo, para mostrarlos en ese orden.</param>
+/// <param name="ReleasedAt">Fecha de publicación de su release en GitHub (null fuera de GitHub).</param>
 public sealed record PackageFile(
     string Key,
     string FileName,
@@ -21,7 +22,8 @@ public sealed record PackageFile(
     ConsolePlatform Platform,
     string? Label = null,
     string? Description = null,
-    int Order = int.MaxValue);
+    int Order = int.MaxValue,
+    DateTimeOffset? ReleasedAt = null);
 
 /// <summary>Lo que se puede descargar de una app: ficheros de la última estable y, si es más nueva, de la última beta.</summary>
 public sealed record ResolvedPackage(

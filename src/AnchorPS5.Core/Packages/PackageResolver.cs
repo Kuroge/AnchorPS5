@@ -39,13 +39,14 @@ public sealed class PackageResolver
         return FromReleases(app, result.Value, result.Status);
     }
 
-    /// <summary>Última estable + última beta si es más nueva que la estable.</summary>
+    /// <summary>Última estable + última beta, solo si la beta se publicó después de la estable.</summary>
     public static ResolvedPackage FromReleases(HomebrewApp app, IEnumerable<GitHubRelease> releases, GitHubStatus source)
     {
         var published = releases.Where(r => !r.Draft).OrderByDescending(r => r.PublishedAt ?? DateTimeOffset.MinValue).ToList();
         var stable = published.FirstOrDefault(r => !r.Prerelease);
         var beta = published.FirstOrDefault(r => r.Prerelease);
-        if (beta is not null && stable is not null && AppVersion.Parse(beta.Version).CompareTo(AppVersion.Parse(stable.Version)) <= 0)
+        if (beta is not null && stable is not null
+            && !ReleaseOrder.IsNewer(beta.Version, beta.PublishedAt, stable.Version, stable.PublishedAt))
             beta = null;
 
         var files = new List<PackageFile>();
@@ -106,7 +107,8 @@ public sealed class PackageResolver
                 AssetClassifier.DetectPlatform(asset.Name),
                 rule?.Label,
                 rule?.Description,
-                rule is null ? int.MaxValue : app.Assets.IndexOf(rule));
+                rule is null ? int.MaxValue : app.Assets.IndexOf(rule),
+                release.PublishedAt);
         }
     }
 

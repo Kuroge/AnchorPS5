@@ -120,7 +120,7 @@ public sealed class LibraryService
 
         var version = string.IsNullOrWhiteSpace(metadata.Version) ? folderName : metadata.Version;
         var files = metadata.Files.Count > 0
-            ? metadata.Files.Select(f => new InstalledFile(f.Key, f.FileName, f.Path, f.Sha256, f.Verified, f.DownloadedAt, f.Prerelease)).ToList()
+            ? metadata.Files.Select(f => new InstalledFile(f.Key, f.FileName, f.Path, f.Sha256, f.Verified, f.DownloadedAt, f.Prerelease, f.ReleasedAt)).ToList()
             : LegacyFiles(versionDir, metadata, version);
 
         return new InstalledVersion(
@@ -165,6 +165,7 @@ public sealed class LibraryService
         Verified = file.Verified,
         DownloadedAt = file.DownloadedAt ?? default,
         Prerelease = file.IsPrerelease,
+        ReleasedAt = file.ReleasedAt,
     };
 
     private static VersionMetadata? ReadMetadata(string metadataFile)
@@ -202,12 +203,18 @@ public sealed class LibrarySnapshot
     public IReadOnlyList<InstalledVersion> GetVersions(HomebrewApp app)
     {
         var folderName = LibraryService.GetAppFolderName(app);
-        return _versions
+        var list = _versions
             .Where(v => v.Version.AppId is { } id
                 ? string.Equals(id, app.Id, StringComparison.OrdinalIgnoreCase)
                 : string.Equals(v.AppFolder, folderName, StringComparison.OrdinalIgnoreCase))
             .Select(v => v.Version)
-            .OrderByDescending(v => v.ParsedVersion)
             .ToList();
+
+        // De la más nueva a la más antigua: por fecha de release si se conoce, si no por versión.
+        list.Sort((a, b) => Packages.ReleaseOrder.Compare(b.Version, ReleasedAt(b), a.Version, ReleasedAt(a)));
+        return list;
     }
+
+    private static DateTimeOffset? ReleasedAt(InstalledVersion version) =>
+        version.Files.Select(f => f.ReleasedAt).Where(d => d is not null).Max();
 }

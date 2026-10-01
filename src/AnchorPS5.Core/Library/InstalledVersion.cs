@@ -24,7 +24,8 @@ public sealed record InstalledFile(
     string? Sha256,
     bool Verified,
     DateTimeOffset? DownloadedAt,
-    bool IsPrerelease);
+    bool IsPrerelease,
+    DateTimeOffset? ReleasedAt = null);
 
 /// <summary>
 /// Metadatos que se guardan dentro de cada carpeta de versión (.anchorps5.json).
@@ -59,4 +60,7 @@ public sealed class VersionFileMetadata
     public bool Verified { get; set; }
     public DateTimeOffset DownloadedAt { get; set; }
     public bool Prerelease { get; set; }
+
+    /// <summary>Fecha de publicación de la release de GitHub de la que salió.</summary>
+    public DateTimeOffset? ReleasedAt { get; set; }
 }
