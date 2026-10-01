@@ -19,8 +19,9 @@ public sealed class ConfigService
     public static string DefaultDownloadPath =>
         Path.Combine(KnownFolders.GetDownloadsPath(), DownloadsSubfolder);
 
-    public static AppConfig CreateDefault() => new()
+    public static AppConfig CreateDefault(string language = "es") => new()
     {
+        Language = language,
         DownloadPath = DefaultDownloadPath,
         Sources =
         [
@@ -29,14 +30,15 @@ public sealed class ConfigService
     };
 
     /// <summary>
-    /// Lee config.json; si no existe, lo crea con los valores por defecto.
+    /// Lee config.json; si no existe, lo crea con los valores por defecto
+    /// y <paramref name="initialLanguage"/> como idioma (el autodetectado).
     /// Los campos ausentes o vacíos toman su valor por defecto.
     /// </summary>
-    public AppConfig LoadOrCreate()
+    public AppConfig LoadOrCreate(string initialLanguage = "es")
     {
         if (!File.Exists(_paths.ConfigFile))
         {
-            var created = CreateDefault();
+            var created = CreateDefault(initialLanguage);
             Save(created);
             return created;
         }

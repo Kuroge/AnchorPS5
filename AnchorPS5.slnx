@@ -3,4 +3,7 @@
     <Project Path="src/AnchorPS5.App/AnchorPS5.App.csproj" />
     <Project Path="src/AnchorPS5.Core/AnchorPS5.Core.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AnchorPS5.Core.Tests/AnchorPS5.Core.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -1,0 +1,17 @@
+{
+  "_meta": { "code": "es", "name": "Español" },
+
+  "app.title": "AnchorPS5",
+
+  "nav.catalog": "Catálogo",
+  "nav.guide": "Guía",
+
+  "setup.language": "Idioma",
+  "setup.downloadFolder": "Carpeta de descargas",
+  "setup.askIntro": "¿Quieres ver la guía de introducción?",
+
+  "common.yes": "Sí",
+  "common.no": "No, gracias",
+
+  "search.placeholder": "Buscar…"
+}
