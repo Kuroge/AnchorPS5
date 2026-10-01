@@ -5,16 +5,27 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:l="using:AnchorPS5.App.Localization">
 
-    <!-- Armazón de navegación; el contenido de cada sección llega en fases posteriores. -->
     <NavigationView
-        IsBackButtonVisible="Collapsed"
+        x:Name="NavView"
+        BackRequested="OnBackRequested"
+        IsBackButtonVisible="Auto"
         IsSettingsVisible="False"
         PaneDisplayMode="Left">
         <NavigationView.MenuItems>
-            <NavigationViewItem Content="{l:Loc Key=nav.catalog}" Icon="Library" IsSelected="True" />
+            <NavigationViewItem
+                x:Name="CatalogItem"
+                Content="{l:Loc Key=nav.catalog}"
+                Icon="Library"
+                Tapped="OnCatalogTapped" />
         </NavigationView.MenuItems>
         <NavigationView.FooterMenuItems>
-            <NavigationViewItem Content="{l:Loc Key=nav.guide}" Icon="Help" />
+            <!-- La guía se conecta en la Fase 4. -->
+            <NavigationViewItem
+                Content="{l:Loc Key=nav.guide}"
+                Icon="Help"
+                SelectsOnInvoked="False" />
         </NavigationView.FooterMenuItems>
+
+        <Frame x:Name="ContentFrame" Navigated="OnNavigated" />
     </NavigationView>
 </Page>

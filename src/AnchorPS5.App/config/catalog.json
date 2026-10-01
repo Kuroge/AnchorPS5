@@ -1,0 +1,50 @@
+// Catálogo local de EJEMPLO: apps ficticias para probar la interfaz.
+// Las URLs de descarga y los sha256 no son reales.
+// iconUrl admite una URL https, una ruta absoluta o una ruta relativa a este fichero.
+{
+  "schemaVersion": 1,
+  "apps": [
+    {
+      "id": "com.ejemplo.holamundo",
+      "name": "Hola Mundo",
+      "version": "1.0.0",
+      "author": "Ejemplo",
+      "description": "Homebrew mínimo de ejemplo: muestra un mensaje en pantalla. Útil para comprobar que la consola ejecuta homebrew correctamente.",
+      "iconUrl": "icons/holamundo.png",
+      "downloadUrl": "https://example.com/homebrew/holamundo-1.0.0.zip",
+      "sizeBytes": 524288,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+      "id": "com.ejemplo.reproductor",
+      "name": "Reproductor multimedia",
+      "version": "2.3.1",
+      "author": "Ejemplo",
+      "description": "Reproduce vídeo y música desde una unidad USB, con soporte de subtítulos y listas de reproducción.",
+      "iconUrl": "icons/reproductor.png",
+      "downloadUrl": "https://example.com/homebrew/reproductor-2.3.1.zip",
+      "sizeBytes": 18874368,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000002"
+    },
+    {
+      "id": "com.ejemplo.explorador",
+      "name": "Explorador de archivos",
+      "version": "0.9.4",
+      "author": "Comunidad",
+      "description": "Navega por las unidades internas y externas, copia y mueve archivos y consulta el espacio libre.",
+      "downloadUrl": "https://example.com/homebrew/explorador-0.9.4.zip",
+      "sizeBytes": 3145728,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000003"
+    },
+    {
+      "id": "com.ejemplo.monitor",
+      "name": "Monitor del sistema",
+      "version": "1.4.0",
+      "author": "Comunidad",
+      "description": "Muestra la temperatura, el uso de CPU y memoria y la velocidad del ventilador en tiempo real.",
+      "downloadUrl": "https://example.com/homebrew/monitor-1.4.0.zip",
+      "sizeBytes": 1048576,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000004"
+    }
+  ]
+}

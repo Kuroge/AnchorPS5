@@ -19,6 +19,27 @@
 
   "intro.skip": "Saltar",
 
+  "catalog.refresh": "Recargar",
+  "catalog.loading": "Cargando catálogo…",
+  "catalog.empty": "No hay aplicaciones en el catálogo. Revisa las fuentes en config/config.json.",
+  "catalog.noResults": "Ninguna aplicación coincide con «{0}».",
+  "catalog.versionAuthor": "v{0} · {1}",
+  "catalog.sourceErrors": "Algunas fuentes no se han podido cargar",
+  "catalog.sourceError": "{0}: {1}",
+  "catalog.error.invalidSource": "la fuente está mal configurada (revisa path/url)",
+  "catalog.error.notFound": "no se encuentra el catálogo",
+  "catalog.error.invalidJson": "el catálogo no es un JSON válido",
+  "catalog.error.network": "no se ha podido conectar",
+  "catalog.error.tooLarge": "el catálogo es demasiado grande",
+
+  "detail.version": "Versión",
+  "detail.author": "Autor",
+  "detail.size": "Tamaño",
+  "detail.source": "Fuente",
+  "detail.id": "Identificador",
+  "detail.sha256": "SHA-256",
+  "detail.noDescription": "Sin descripción.",
+
   "common.yes": "Sí",
   "common.no": "No, gracias",
 

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AnchorPS5.App.Views.AppDetailPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:AnchorPS5.App.Localization">
+
+    <Page.Resources>
+        <Style x:Key="LabelStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <Style x:Key="ValueStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+            <Setter Property="IsTextSelectionEnabled" Value="True" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer>
+        <StackPanel
+            MaxWidth="820"
+            Padding="24,16,24,24"
+            HorizontalAlignment="Left"
+            Spacing="24">
+
+            <Grid ColumnSpacing="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border
+                    Width="112"
+                    Height="112"
+                    Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                    CornerRadius="16">
+                    <Grid>
+                        <FontIcon FontSize="48" Glyph="&#xE71D;" />
+                        <Image Source="{x:Bind Item.Icon}" Stretch="UniformToFill" />
+                    </Grid>
+                </Border>
+                <StackPanel
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Spacing="4">
+                    <TextBlock
+                        Style="{StaticResource TitleTextBlockStyle}"
+                        Text="{x:Bind Item.Name}"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{x:Bind Item.VersionAuthor}" />
+                </StackPanel>
+            </Grid>
+
+            <TextBlock
+                IsTextSelectionEnabled="True"
+                Style="{StaticResource BodyTextBlockStyle}"
+                Text="{x:Bind Item.Description}" />
+
+            <Grid ColumnSpacing="24" RowSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Style="{StaticResource LabelStyle}" Text="{l:Loc Key=detail.version}" />
+                <TextBlock Grid.Column="1" Style="{StaticResource ValueStyle}" Text="{x:Bind Item.Version}" />
+
+                <TextBlock Grid.Row="1" Style="{StaticResource LabelStyle}" Text="{l:Loc Key=detail.author}" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource ValueStyle}" Text="{x:Bind Item.Author}" />
+
+                <TextBlock Grid.Row="2" Style="{StaticResource LabelStyle}" Text="{l:Loc Key=detail.size}" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource ValueStyle}" Text="{x:Bind Item.SizeText}" />
+
+                <TextBlock Grid.Row="3" Style="{StaticResource LabelStyle}" Text="{l:Loc Key=detail.source}" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource ValueStyle}" Text="{x:Bind Item.SourceName}" />
+
+                <TextBlock Grid.Row="4" Style="{StaticResource LabelStyle}" Text="{l:Loc Key=detail.id}" />
+                <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource ValueStyle}" Text="{x:Bind Item.Id}" />
+
+                <TextBlock Grid.Row="5" Style="{StaticResource LabelStyle}" Text="{l:Loc Key=detail.sha256}" />
+                <TextBlock
+                    Grid.Row="5"
+                    Grid.Column="1"
+                    FontFamily="Consolas"
+                    Style="{StaticResource ValueStyle}"
+                    Text="{x:Bind Item.Sha256}"
+                    TextWrapping="WrapWholeWords" />
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

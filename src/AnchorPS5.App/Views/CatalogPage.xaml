@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AnchorPS5.App.Views.CatalogPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:AnchorPS5.App.Localization"
+    xmlns:vm="using:AnchorPS5.App.ViewModels"
+    NavigationCacheMode="Required">
+
+    <Grid Padding="24,16,24,0" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                VerticalAlignment="Center"
+                Style="{StaticResource TitleTextBlockStyle}"
+                Text="{l:Loc Key=nav.catalog}" />
+            <AutoSuggestBox
+                Grid.Column="1"
+                Width="280"
+                PlaceholderText="{l:Loc Key=search.placeholder}"
+                QueryIcon="Find"
+                Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Button
+                Grid.Column="2"
+                Command="{x:Bind ViewModel.LoadCommand}"
+                ToolTipService.ToolTip="{l:Loc Key=catalog.refresh}">
+                <SymbolIcon Symbol="Refresh" />
+            </Button>
+        </Grid>
+
+        <InfoBar
+            Grid.Row="1"
+            IsClosable="True"
+            IsOpen="{x:Bind ViewModel.HasSourceErrors, Mode=OneWay}"
+            Message="{x:Bind ViewModel.SourceErrors, Mode=OneWay}"
+            Severity="Warning"
+            Title="{l:Loc Key=catalog.sourceErrors}" />
+
+        <GridView
+            Grid.Row="2"
+            IsItemClickEnabled="True"
+            ItemClick="OnItemClick"
+            ItemsSource="{x:Bind ViewModel.Items}"
+            SelectionMode="None">
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="vm:CatalogItemViewModel">
+                    <StackPanel
+                        Width="200"
+                        Padding="16"
+                        Spacing="10">
+                        <Border
+                            Width="72"
+                            Height="72"
+                            HorizontalAlignment="Left"
+                            Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                            CornerRadius="12">
+                            <Grid>
+                                <FontIcon FontSize="32" Glyph="&#xE71D;" />
+                                <Image Source="{x:Bind Icon}" Stretch="UniformToFill" />
+                            </Grid>
+                        </Border>
+                        <TextBlock
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            Text="{x:Bind Name}"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind VersionAuthor}"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>
+
+        <TextBlock
+            Grid.Row="2"
+            Margin="0,48,0,0"
+            HorizontalAlignment="Center"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+            TextAlignment="Center"
+            TextWrapping="Wrap"
+            Visibility="{x:Bind ViewModel.HasStatus, Mode=OneWay}" />
+    </Grid>
+</Page>
