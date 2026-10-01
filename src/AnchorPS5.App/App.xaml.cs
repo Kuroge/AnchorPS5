@@ -25,7 +25,13 @@ public partial class App : Application
     public static LocalizationService Localization { get; } = new(Paths.LangDirectory);
 
     /// <summary>Un único HttpClient para toda la app (fuentes remotas y, más adelante, descargas).</summary>
-    public static HttpClient Http { get; } = CreateHttpClient();
+    public static HttpClient Http { get; } = CreateHttpClient(TimeSpan.FromSeconds(30));
+
+    /// <summary>Para descargas: sin límite total de tiempo; DownloadManager detecta las que se quedan paradas.</summary>
+    public static HttpClient DownloadHttp { get; } = CreateHttpClient(Timeout.InfiniteTimeSpan);
+
+    /// <summary>7-Zip incluido junto al exe.</summary>
+    public static string SevenZipPath { get; } = Path.Combine(AppContext.BaseDirectory, "tools", "7zip", "7z.exe");
 
     public static SourceLoader SourceLoader { get; } = new(Http, Paths.ConfigDirectory);
 
@@ -47,9 +53,9 @@ public partial class App : Application
         _window.Activate();
     }
 
-    private static HttpClient CreateHttpClient()
+    private static HttpClient CreateHttpClient(TimeSpan timeout)
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        var client = new HttpClient { Timeout = timeout };
         var version = typeof(App).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
         client.DefaultRequestHeaders.UserAgent.ParseAdd($"AnchorPS5/{version}");
         return client;

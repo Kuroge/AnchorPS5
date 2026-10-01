@@ -135,8 +135,23 @@
                             <StackPanel
                                 Grid.Row="2"
                                 VerticalAlignment="Bottom"
+                                Spacing="6"
+                                Visibility="{x:Bind IsBusy, Mode=OneWay}">
+                                <ProgressBar
+                                    IsIndeterminate="{x:Bind ActiveJob.IsIndeterminate, Mode=OneWay, FallbackValue=True}"
+                                    Value="{x:Bind ActiveJob.ProgressValue, Mode=OneWay, FallbackValue=0}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind ActiveJob.StatusText, Mode=OneWay, FallbackValue=''}"
+                                    TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <StackPanel
+                                Grid.Row="2"
+                                VerticalAlignment="Bottom"
                                 Orientation="Horizontal"
-                                Spacing="6">
+                                Spacing="6"
+                                Visibility="{x:Bind IsIdle, Mode=OneWay}">
                                 <FontIcon
                                     FontSize="14"
                                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"

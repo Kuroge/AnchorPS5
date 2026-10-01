@@ -22,6 +22,12 @@ public sealed partial class AppDetailPage : Page
         Bindings.Update();
     }
 
+    private void OnDeleteAllConfirmed(object sender, RoutedEventArgs e)
+    {
+        DeleteAllFlyout.Hide();
+        Item.DeleteAllCommand.Execute(null);
+    }
+
     private async void OnCopyShaClick(object sender, RoutedEventArgs e)
     {
         var package = new DataPackage();

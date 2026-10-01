@@ -1,7 +1,7 @@
 namespace AnchorPS5.Core.Library;
 
 /// <summary>Una versión descargada: carpeta &lt;downloadPath&gt;\&lt;App&gt;\&lt;versión&gt;.</summary>
-public sealed record InstalledVersion(string Version, string FolderPath, string? AppId, DateTimeOffset? DownloadedAt)
+public sealed record InstalledVersion(string Version, string FolderPath, string? AppId, DateTimeOffset? DownloadedAt, bool Verified = false)
 {
     public AppVersion ParsedVersion { get; } = AppVersion.Parse(Version);
 }
@@ -21,4 +21,7 @@ public sealed class VersionMetadata
     public DateTimeOffset DownloadedAt { get; set; }
     public string? DownloadUrl { get; set; }
     public string? Sha256 { get; set; }
+
+    /// <summary>true si el SHA-256 se comprobó contra el del catálogo.</summary>
+    public bool Verified { get; set; }
 }

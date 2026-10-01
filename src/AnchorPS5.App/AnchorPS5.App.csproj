@@ -35,6 +35,14 @@
     </Content>
   </ItemGroup>
 
+  <!-- 7-Zip 26.03 (x64) incluido para extraer paquetes: tools\7zip\ junto al exe. -->
+  <ItemGroup>
+    <Content Include="tools\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
   <!-- Icono de la ventana (AppWindow.SetIcon necesita un fichero). -->
   <ItemGroup>
     <Content Include="Assets\AnchorPS5.ico">

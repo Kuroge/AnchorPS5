@@ -9,32 +9,41 @@ namespace AnchorPS5.Core.Library;
 /// </summary>
 public sealed class LibraryService
 {
-    private readonly string _downloadPath;
+    /// <summary>Carpeta de trabajo de las descargas en curso (oculta para el escaneo).</summary>
+    public const string TempFolderName = ".anchorps5-tmp";
 
     public LibraryService(string downloadPath)
     {
-        _downloadPath = downloadPath;
+        DownloadPath = Path.GetFullPath(downloadPath);
     }
+
+    public string DownloadPath { get; }
+
+    /// <summary>Dentro de la carpeta de descargas: así mover el resultado es instantáneo (mismo disco).</summary>
+    public string TempRoot => Path.Combine(DownloadPath, TempFolderName);
 
     public static string GetAppFolderName(HomebrewApp app) => PathNames.Sanitize(app.Name);
 
-    public string GetAppFolder(HomebrewApp app) => Path.Combine(_downloadPath, GetAppFolderName(app));
+    public string GetAppFolder(HomebrewApp app) => Path.Combine(DownloadPath, GetAppFolderName(app));
 
     public string GetVersionFolder(HomebrewApp app, string version) =>
-        Path.Combine(GetAppFolder(app), PathNames.Sanitize(version));
+        Path.Combine(GetAppFolder(app), PathNames.Sanitize(string.IsNullOrWhiteSpace(version) ? "unknown" : version));
 
     /// <summary>Lee la carpeta de descargas. Si no existe, la biblioteca está vacía.</summary>
     public LibrarySnapshot Scan()
     {
         var versions = new List<(string AppFolder, InstalledVersion Version)>();
-        if (!Directory.Exists(_downloadPath))
+        if (!Directory.Exists(DownloadPath))
             return new LibrarySnapshot(versions);
 
         try
         {
-            foreach (var appDir in Directory.EnumerateDirectories(_downloadPath))
+            foreach (var appDir in Directory.EnumerateDirectories(DownloadPath))
             {
                 var appFolder = Path.GetFileName(appDir);
+                if (appFolder.StartsWith('.'))
+                    continue; // temporales y similares
+
                 foreach (var versionDir in Directory.EnumerateDirectories(appDir))
                     versions.Add((appFolder, ReadVersion(versionDir)));
             }
@@ -45,6 +54,34 @@ public sealed class LibraryService
         }
 
         return new LibrarySnapshot(versions);
+    }
+
+    /// <summary>Borra la carpeta de una versión y, si queda vacía, la de la app.</summary>
+    public void DeleteVersion(InstalledVersion version)
+    {
+        var folder = EnsureInside(version.FolderPath);
+        if (Directory.Exists(folder))
+            Directory.Delete(folder, recursive: true);
+
+        var appFolder = Path.GetDirectoryName(folder);
+        if (appFolder is not null && Directory.Exists(appFolder) && !Directory.EnumerateFileSystemEntries(appFolder).Any())
+            Directory.Delete(appFolder);
+    }
+
+    public void DeleteVersions(IEnumerable<InstalledVersion> versions)
+    {
+        foreach (var version in versions)
+            DeleteVersion(version);
+    }
+
+    /// <summary>Nunca se borra nada fuera de la carpeta de descargas (ni la propia carpeta).</summary>
+    private string EnsureInside(string path)
+    {
+        var full = Path.GetFullPath(path);
+        var root = Path.TrimEndingDirectorySeparator(DownloadPath) + Path.DirectorySeparatorChar;
+        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"La ruta {full} no está dentro de la carpeta de descargas.");
+        return full;
     }
 
     private static InstalledVersion ReadVersion(string versionDir)
@@ -62,7 +99,8 @@ public sealed class LibraryService
                         string.IsNullOrWhiteSpace(metadata.Version) ? folderName : metadata.Version,
                         versionDir,
                         string.IsNullOrWhiteSpace(metadata.Id) ? null : metadata.Id,
-                        metadata.DownloadedAt);
+                        metadata.DownloadedAt,
+                        metadata.Verified);
                 }
             }
             catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)

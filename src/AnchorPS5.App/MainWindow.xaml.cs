@@ -120,6 +120,7 @@ public sealed partial class MainWindow : Window
         AppTitleBar.IsBackButtonVisible = true;
         AppTitleBar.IsBackButtonEnabled = false;
         AppTitleBar.IsPaneToggleButtonVisible = true;
+        AppTitleBar.RightHeader = _shell.DownloadsIndicator;
         ShowScreen(_shell);
     }
 
@@ -130,6 +131,7 @@ public sealed partial class MainWindow : Window
             _shell = null;
             AppTitleBar.IsBackButtonVisible = false;
             AppTitleBar.IsPaneToggleButtonVisible = false;
+            AppTitleBar.RightHeader = null;
         }
 
         ScreenHost.Content = screen;

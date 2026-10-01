@@ -113,15 +113,114 @@
                                 </StackPanel>
                             </Border>
                         </StackPanel>
+
+                        <!-- Acciones -->
+                        <StackPanel
+                            Margin="0,10,0,0"
+                            Orientation="Horizontal"
+                            Spacing="8">
+                            <Button
+                                MinWidth="140"
+                                AutomationProperties.Name="{l:Loc Key=action.download}"
+                                Command="{x:Bind Item.DownloadCommand}"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Visibility="{x:Bind Item.ShowDownloadButton, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="16" Glyph="&#xE896;" />
+                                    <TextBlock Text="{l:Loc Key=action.download}" />
+                                </StackPanel>
+                            </Button>
+                            <Button
+                                MinWidth="140"
+                                AutomationProperties.Name="{x:Bind Item.UpdateButtonText}"
+                                Command="{x:Bind Item.DownloadCommand}"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Visibility="{x:Bind Item.ShowUpdateButton, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="16" Glyph="&#xE74A;" />
+                                    <TextBlock Text="{x:Bind Item.UpdateButtonText}" />
+                                </StackPanel>
+                            </Button>
+                            <Button
+                                AutomationProperties.Name="{l:Loc Key=action.openFolder}"
+                                Command="{x:Bind Item.OpenFolderCommand}"
+                                Visibility="{x:Bind Item.HasInstalledVersions, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="16" Glyph="&#xE838;" />
+                                    <TextBlock Text="{l:Loc Key=action.openFolder}" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Descarga en curso -->
+                        <Grid
+                            MaxWidth="460"
+                            Margin="0,10,0,0"
+                            HorizontalAlignment="Left"
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="12"
+                            Visibility="{x:Bind Item.IsBusy, Mode=OneWay}">
+                            <StackPanel VerticalAlignment="Center" Spacing="6">
+                                <ProgressBar
+                                    MinWidth="320"
+                                    IsIndeterminate="{x:Bind Item.ActiveJob.IsIndeterminate, Mode=OneWay, FallbackValue=True}"
+                                    Value="{x:Bind Item.ActiveJob.ProgressValue, Mode=OneWay, FallbackValue=0}" />
+                                <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind Item.ActiveJob.StatusText, Mode=OneWay, FallbackValue=''}" />
+                            </StackPanel>
+                            <Button
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Command="{x:Bind Item.CancelDownloadCommand}"
+                                Content="{l:Loc Key=action.cancel}" />
+                        </Grid>
                     </StackPanel>
                 </Grid>
             </Grid>
+
+            <!-- Errores -->
+            <InfoBar
+                IsClosable="False"
+                IsOpen="{x:Bind Item.HasJobError, Mode=OneWay}"
+                Message="{x:Bind Item.ActiveJob.StatusText, Mode=OneWay, FallbackValue=''}"
+                Severity="Error"
+                Title="{l:Loc Key=download.failedTitle}">
+                <InfoBar.ActionButton>
+                    <Button Command="{x:Bind Item.RetryDownloadCommand}" Content="{l:Loc Key=action.retry}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+            <InfoBar
+                IsClosable="True"
+                IsOpen="{x:Bind Item.HasActionError, Mode=OneWay}"
+                Message="{x:Bind Item.ActionError, Mode=OneWay}"
+                Severity="Error" />
 
             <!-- Estado -->
             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{l:Loc Key=detail.statusTitle}" />
             <StackPanel Margin="0,0,0,16" Spacing="4">
                 <Border Style="{StaticResource CardStyle}">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                        <Button
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="{l:Loc Key=action.deleteAll}"
+                            Visibility="{x:Bind Item.HasInstalledVersions, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="&#xE74D;" />
+                                <TextBlock Text="{l:Loc Key=action.deleteAll}" />
+                            </StackPanel>
+                            <Button.Flyout>
+                                <Flyout x:Name="DeleteAllFlyout">
+                                    <StackPanel MaxWidth="320" Spacing="12">
+                                        <TextBlock Text="{x:Bind Item.DeleteAllConfirmText}" TextWrapping="Wrap" />
+                                        <Button
+                                            AutomationProperties.Name="{l:Loc Key=action.confirmDelete}"
+                                            Click="OnDeleteAllConfirmed"
+                                            Content="{l:Loc Key=action.confirmDelete}"
+                                            Style="{StaticResource AccentButtonStyle}" />
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
                         <Grid Width="40" Height="40">
                             <Ellipse Fill="{ThemeResource ControlFillColorSecondaryBrush}" Visibility="{x:Bind Item.IsNotDownloaded, Mode=OneWay}" />
                             <Ellipse Fill="{ThemeResource AnchorBlueTintBrush}" Visibility="{x:Bind Item.IsDownloaded, Mode=OneWay}" />
@@ -165,11 +264,46 @@
                                 Margin="0,4,0,0"
                                 Padding="16,10"
                                 Style="{StaticResource CardStyle}">
-                                <Grid ColumnDefinitions="40,Auto,*" ColumnSpacing="16">
+                                <Grid ColumnDefinitions="40,Auto,*,Auto" ColumnSpacing="16">
                                     <FontIcon
                                         FontSize="16"
                                         Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                         Glyph="&#xE8B7;" />
+                                    <StackPanel
+                                        Grid.Column="3"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal"
+                                        Spacing="4">
+                                        <Button
+                                            Padding="8"
+                                            AutomationProperties.Name="{l:Loc Key=action.openFolder}"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Command="{x:Bind OpenCommand}"
+                                            ToolTipService.ToolTip="{l:Loc Key=action.openFolder}">
+                                            <FontIcon FontSize="14" Glyph="&#xE838;" />
+                                        </Button>
+                                        <Button
+                                            Padding="8"
+                                            AutomationProperties.Name="{l:Loc Key=action.delete}"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            ToolTipService.ToolTip="{l:Loc Key=action.delete}">
+                                            <FontIcon FontSize="14" Glyph="&#xE74D;" />
+                                            <Button.Flyout>
+                                                <Flyout>
+                                                    <StackPanel MaxWidth="320" Spacing="12">
+                                                        <TextBlock Text="{x:Bind DeleteConfirmText}" TextWrapping="Wrap" />
+                                                        <Button
+                                                            AutomationProperties.Name="{l:Loc Key=action.confirmDelete}"
+                                                            Command="{x:Bind DeleteCommand}"
+                                                            Content="{l:Loc Key=action.confirmDelete}"
+                                                            Style="{StaticResource AccentButtonStyle}" />
+                                                    </StackPanel>
+                                                </Flyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                    </StackPanel>
                                     <TextBlock
                                         Grid.Column="1"
                                         VerticalAlignment="Center"

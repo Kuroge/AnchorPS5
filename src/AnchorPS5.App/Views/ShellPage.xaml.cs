@@ -1,6 +1,8 @@
 using System.ComponentModel;
+using AnchorPS5.App.Controls;
 using AnchorPS5.App.ViewModels;
 using AnchorPS5.Core.Catalog;
+using AnchorPS5.Core.Downloads;
 using AnchorPS5.Core.Library;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -18,17 +20,26 @@ public sealed partial class ShellPage : Page
     {
         InitializeComponent();
 
+        var library = new LibraryService(App.Config.DownloadPath);
+        var manager = new DownloadManager(App.DownloadHttp, library, new SevenZipExtractor(App.SevenZipPath), App.Config.MaxConcurrentDownloads);
+        var downloads = new DownloadsViewModel(manager, App.Localization);
+        DownloadsIndicator = new DownloadsIndicator(downloads);
+
         _catalog = new CatalogViewModel(
             App.SourceLoader,
             App.Config.Sources,
             App.Localization,
-            new LibraryService(App.Config.DownloadPath),
-            App.SeenApps);
+            library,
+            App.SeenApps,
+            downloads);
         _catalog.PropertyChanged += OnCatalogPropertyChanged;
 
         NavView.SelectedItem = CatalogItem;
         ContentFrame.Navigate(typeof(CatalogPage), _catalog);
     }
+
+    /// <summary>Indicador de descargas para la barra de título.</summary>
+    public DownloadsIndicator DownloadsIndicator { get; }
 
     /// <summary>Avisa a la barra de título de si hay a dónde volver.</summary>
     public event EventHandler<bool>? CanGoBackChanged;
