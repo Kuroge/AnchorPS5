@@ -56,10 +56,12 @@ public sealed class LibraryServiceTests : IDisposable
 
     private static HomebrewApp App(string id, string name, string version) => new() { Id = id, Name = name, Version = version };
 
-    private void CreateVersion(string appFolder, string versionFolder, VersionMetadata? metadata = null)
+    /// <summary>&lt;app&gt;\&lt;fichero&gt;\&lt;versión&gt;\&lt;fichero.elf&gt;</summary>
+    private void CreateVersion(string appFolder, string versionFolder, VersionMetadata? metadata = null, string file = "app.elf")
     {
-        var dir = Path.Combine(_downloads, appFolder, versionFolder);
+        var dir = Path.Combine(_downloads, appFolder, Path.GetFileNameWithoutExtension(file), versionFolder);
         Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, file), "x");
         if (metadata is not null)
             File.WriteAllText(Path.Combine(dir, VersionMetadata.FileName), JsonSerializer.Serialize(metadata, JsonDefaults.Options));
     }
@@ -128,7 +130,49 @@ public sealed class LibraryServiceTests : IDisposable
     {
         var service = new LibraryService(_downloads);
 
-        Assert.Equal(Path.Combine(_downloads, "App_ Pro", "1.0_beta"), service.GetVersionFolder(App("a", "App: Pro", "1.0"), "1.0/beta"));
+        Assert.Equal(Path.Combine(_downloads, "App_ Pro", "tool-ps5", "1.0_beta"), service.GetVersionFolder(App("a", "App: Pro", "1.0"), "tool-ps5.elf", "1.0/beta"));
+    }
+
+    [Theory]
+    [InlineData("ftpsrv-ps5.elf", "ftpsrv-ps5")]
+    [InlineData("ftpsrv-ps5-install.elf", "ftpsrv-ps5-install")]
+    [InlineData("app.tar.gz", "app")]
+    [InlineData("README", "README")]
+    public void FileFolder_IsKeyWithoutExtension(string key, string expected) =>
+        Assert.Equal(expected, LibraryService.GetFileFolderName(key));
+
+    [Fact]
+    public void DeleteVersion_RemovesEmptyParents_ButKeepsOtherFiles()
+    {
+        CreateVersion("App", "1.0", file: "a.elf");
+        CreateVersion("App", "2.0", file: "a.elf");
+        CreateVersion("App", "1.0", file: "b.elf");
+        var service = new LibraryService(_downloads);
+        var app = App("x", "App", "2.0");
+
+        foreach (var v in service.Scan().GetVersions(app).Where(v => v.Files[0].Key == "a.elf"))
+            service.DeleteVersion(v);
+
+        Assert.False(Directory.Exists(Path.Combine(_downloads, "App", "a")));
+        Assert.True(Directory.Exists(Path.Combine(_downloads, "App", "b", "1.0")));
+
+        service.DeleteVersions(service.Scan().GetVersions(app));
+        Assert.False(Directory.Exists(Path.Combine(_downloads, "App")));
+        Assert.True(Directory.Exists(_downloads));
+    }
+
+    [Fact]
+    public void AllButLatestPerFile_KeepsNewestOfEachFile()
+    {
+        CreateVersion("App", "1.0", file: "a.elf");
+        CreateVersion("App", "1.1", file: "a.elf");
+        CreateVersion("App", "1.2", file: "a.elf");
+        CreateVersion("App", "0.5", file: "b.elf");
+
+        var versions = new LibraryService(_downloads).Scan().GetVersions(App("x", "App", "1.2"));
+        var extra = LibrarySnapshot.AllButLatestPerFile(versions);
+
+        Assert.Equal(["1.0", "1.1"], extra.Select(v => v.Version).Order());
     }
 }
 

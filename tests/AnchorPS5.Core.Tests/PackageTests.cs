@@ -343,7 +343,7 @@ public sealed class MultiFileDownloadTests : IDisposable
     }
 
     [Fact]
-    public async Task TwoFilesOfSameVersion_LiveTogether_EachWithItsMetadata()
+    public async Task EachFile_GoesToItsOwnFolder_WithItsMetadata()
     {
         var bodies = new Dictionary<string, byte[]>
         {
@@ -362,26 +362,36 @@ public sealed class MultiFileDownloadTests : IDisposable
         await RunAsync(manager, app, File("ftpsrv-ps5.elf"));
         await RunAsync(manager, app, File("ftpsrv-ps5-install.elf"));
 
-        var version = Assert.Single(library.Scan().GetVersions(app));
-        Assert.Equal(["ftpsrv-ps5-install.elf", "ftpsrv-ps5.elf"], version.Files.Select(f => f.FileName).Order());
-        Assert.All(version.Files, f => Assert.True(f.Verified));
-        Assert.True(System.IO.File.Exists(Path.Combine(version.FolderPath, "ftpsrv-ps5.elf")));
-        Assert.True(System.IO.File.Exists(Path.Combine(version.FolderPath, "ftpsrv-ps5-install.elf")));
+        // ftpsrv\ftpsrv-ps5\0.21.1\ftpsrv-ps5.elf y ftpsrv\ftpsrv-ps5-install\0.21.1\ftpsrv-ps5-install.elf
+        var versions = library.Scan().GetVersions(app);
+        Assert.Equal(2, versions.Count);
+        Assert.All(versions, v => Assert.True(Assert.Single(v.Files).Verified));
+        Assert.True(System.IO.File.Exists(Path.Combine(_downloads, "ftpsrv", "ftpsrv-ps5", "0.21.1", "ftpsrv-ps5.elf")));
+        Assert.True(System.IO.File.Exists(Path.Combine(_downloads, "ftpsrv", "ftpsrv-ps5-install", "0.21.1", "ftpsrv-ps5-install.elf")));
     }
 
     [Fact]
-    public void LegacyMetadata_IsReadAsSingleFile()
+    public void ManualCopy_InNewLayout_IsRecognized()
     {
-        var dir = Path.Combine(_downloads, "Hola", "1.0.0");
+        var dir = Path.Combine(_downloads, "Hola", "hola", "1.0.0");
         Directory.CreateDirectory(dir);
         System.IO.File.WriteAllText(Path.Combine(dir, "hola.elf"), "x");
-        System.IO.File.WriteAllText(Path.Combine(dir, VersionMetadata.FileName),
-            """{ "id": "hola", "version": "1.0.0", "sha256": "abc", "verified": true, "downloadedAt": "2026-09-28T18:30:00+02:00" }""");
 
         var version = Assert.Single(new LibraryService(_downloads).Scan().GetVersions(new HomebrewApp { Id = "hola", Name = "Hola" }));
 
-        var file = Assert.Single(version.Files);
-        Assert.Equal(("hola.elf", "abc", true), (file.Key, file.Sha256, file.Verified));
+        Assert.Equal("1.0.0", version.Version);
+        Assert.Equal("hola.elf", Assert.Single(version.Files).Key);
+    }
+
+    [Fact]
+    public void OldLayout_IsIgnored()
+    {
+        // <App>\<versión>\fichero (estructura anterior): no se reconoce como descarga.
+        var dir = Path.Combine(_downloads, "Hola", "1.0.0");
+        Directory.CreateDirectory(dir);
+        System.IO.File.WriteAllText(Path.Combine(dir, "hola.elf"), "x");
+
+        Assert.Empty(new LibraryService(_downloads).Scan().GetVersions(new HomebrewApp { Id = "hola", Name = "Hola" }));
     }
 
     private static async Task RunAsync(DownloadManager manager, HomebrewApp app, PackageFile file)

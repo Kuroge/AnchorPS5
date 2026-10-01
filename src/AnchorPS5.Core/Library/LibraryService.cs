@@ -1,16 +1,20 @@
 using System.Text.Json;
 using AnchorPS5.Core.Configuration;
 using AnchorPS5.Core.Models;
+using AnchorPS5.Core.Packages;
 
 namespace AnchorPS5.Core.Library;
 
 /// <summary>
-/// Lo descargado en disco: &lt;downloadPath&gt;\&lt;App&gt;\&lt;versión&gt;\… (una carpeta por versión).
+/// Lo descargado en disco: &lt;downloadPath&gt;\&lt;App&gt;\&lt;fichero&gt;\&lt;versión&gt;\… — una carpeta
+/// por app, dentro una por fichero publicado y dentro una por cada versión descargada.
 /// </summary>
 public sealed class LibraryService
 {
     /// <summary>Carpeta de trabajo de las descargas en curso (oculta para el escaneo).</summary>
     public const string TempFolderName = ".anchorps5-tmp";
+
+    private static readonly string[] DoubleExtensions = [".tar.gz", ".tar.bz2", ".tar.xz", ".tar.zst"];
 
     public LibraryService(string downloadPath)
     {
@@ -24,10 +28,21 @@ public sealed class LibraryService
 
     public static string GetAppFolderName(HomebrewApp app) => PathNames.Sanitize(app.Name);
 
+    /// <summary>Carpeta de un fichero: su clave sin extensión ("ftpsrv-ps5.elf" → "ftpsrv-ps5").</summary>
+    public static string GetFileFolderName(string fileKey)
+    {
+        var name = fileKey;
+        var doubleExtension = DoubleExtensions.FirstOrDefault(e => name.EndsWith(e, StringComparison.OrdinalIgnoreCase));
+        name = doubleExtension is not null ? name[..^doubleExtension.Length] : Path.GetFileNameWithoutExtension(name);
+        return PathNames.Sanitize(string.IsNullOrWhiteSpace(name) ? fileKey : name);
+    }
+
     public string GetAppFolder(HomebrewApp app) => Path.Combine(DownloadPath, GetAppFolderName(app));
 
-    public string GetVersionFolder(HomebrewApp app, string version) =>
-        Path.Combine(GetAppFolder(app), PathNames.Sanitize(string.IsNullOrWhiteSpace(version) ? "unknown" : version));
+    public string GetFileFolder(HomebrewApp app, string fileKey) => Path.Combine(GetAppFolder(app), GetFileFolderName(fileKey));
+
+    public string GetVersionFolder(HomebrewApp app, string fileKey, string version) =>
+        Path.Combine(GetFileFolder(app, fileKey), PathNames.Sanitize(string.IsNullOrWhiteSpace(version) ? "unknown" : version));
 
     /// <summary>Lee la carpeta de descargas. Si no existe, la biblioteca está vacía.</summary>
     public LibrarySnapshot Scan()
@@ -44,7 +59,8 @@ public sealed class LibraryService
                 if (appFolder.StartsWith('.'))
                     continue; // temporales y similares
 
-                foreach (var versionDir in Directory.EnumerateDirectories(appDir))
+                foreach (var fileDir in Directory.EnumerateDirectories(appDir))
+                foreach (var versionDir in Directory.EnumerateDirectories(fileDir))
                     versions.Add((appFolder, ReadVersion(versionDir)));
             }
         }
@@ -56,46 +72,37 @@ public sealed class LibraryService
         return new LibrarySnapshot(versions);
     }
 
-    /// <summary>Borra la carpeta de una versión y, si queda vacía, la de la app.</summary>
+    /// <summary>Borra una versión y, si quedan vacías, las carpetas del fichero y de la app.</summary>
     public void DeleteVersion(InstalledVersion version)
     {
         var folder = EnsureInside(version.FolderPath);
         if (Directory.Exists(folder))
             Directory.Delete(folder, recursive: true);
 
-        var appFolder = Path.GetDirectoryName(folder);
-        if (appFolder is not null && Directory.Exists(appFolder) && !Directory.EnumerateFileSystemEntries(appFolder).Any())
-            Directory.Delete(appFolder);
+        // Sube borrando carpetas vacías sin salir nunca de la de descargas.
+        var parent = Path.GetDirectoryName(folder);
+        while (parent is not null && IsInside(parent) && Directory.Exists(parent) && !Directory.EnumerateFileSystemEntries(parent).Any())
+        {
+            Directory.Delete(parent);
+            parent = Path.GetDirectoryName(parent);
+        }
     }
 
     public void DeleteVersions(IEnumerable<InstalledVersion> versions)
     {
-        foreach (var version in versions)
+        foreach (var version in versions.ToList())
             DeleteVersion(version);
-    }
-
-    /// <summary>Nunca se borra nada fuera de la carpeta de descargas (ni la propia carpeta).</summary>
-    private string EnsureInside(string path)
-    {
-        var full = Path.GetFullPath(path);
-        var root = Path.TrimEndingDirectorySeparator(DownloadPath) + Path.DirectorySeparatorChar;
-        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"La ruta {full} no está dentro de la carpeta de descargas.");
-        return full;
     }
 
     /// <summary>
     /// Añade (o sustituye) un fichero en los metadatos de su carpeta de versión.
-    /// Varias descargas de la misma versión conviven en la misma carpeta.
     /// </summary>
     public static void RecordFile(string versionDir, string appId, string appName, string version, VersionFileMetadata file)
     {
         var metadataFile = Path.Combine(versionDir, VersionMetadata.FileName);
         var metadata = ReadMetadata(metadataFile) ?? new VersionMetadata();
-        if (metadata.Files.Count == 0)
-            metadata.Files.AddRange(LegacyFiles(versionDir, metadata).Select(ToMetadata));
 
-        metadata.SchemaVersion = 2;
+        metadata.SchemaVersion = 3;
         metadata.Id = appId;
         metadata.Name = appName;
         metadata.Version = version;
@@ -108,6 +115,18 @@ public sealed class LibraryService
         File.Move(temp, metadataFile, overwrite: true);
     }
 
+    /// <summary>Nunca se borra nada fuera de la carpeta de descargas (ni la propia carpeta).</summary>
+    private string EnsureInside(string path)
+    {
+        var full = Path.GetFullPath(path);
+        if (!IsInside(full))
+            throw new InvalidOperationException($"La ruta {full} no está dentro de la carpeta de descargas.");
+        return full;
+    }
+
+    private bool IsInside(string path) =>
+        Path.GetFullPath(path).StartsWith(Path.TrimEndingDirectorySeparator(DownloadPath) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+
     private static InstalledVersion ReadVersion(string versionDir)
     {
         var folderName = Path.GetFileName(versionDir);
@@ -115,13 +134,13 @@ public sealed class LibraryService
         if (metadata is null)
         {
             // Copiada a mano: la versión es el nombre de la carpeta y los ficheros, lo que haya.
-            return new InstalledVersion(folderName, versionDir, null, null, Files: LegacyFiles(versionDir, null, folderName));
+            return new InstalledVersion(folderName, versionDir, null, null, Files: FilesInFolder(versionDir, folderName));
         }
 
         var version = string.IsNullOrWhiteSpace(metadata.Version) ? folderName : metadata.Version;
         var files = metadata.Files.Count > 0
             ? metadata.Files.Select(f => new InstalledFile(f.Key, f.FileName, f.Path, f.Sha256, f.Verified, f.DownloadedAt, f.Prerelease, f.ReleasedAt)).ToList()
-            : LegacyFiles(versionDir, metadata, version);
+            : FilesInFolder(versionDir, version);
 
         return new InstalledVersion(
             version,
@@ -132,41 +151,14 @@ public sealed class LibraryService
             files);
     }
 
-    /// <summary>Ficheros de una carpeta sin lista en los metadatos (esquema 1 o copia a mano).</summary>
-    private static List<InstalledFile> LegacyFiles(string versionDir, VersionMetadata? metadata, string? version = null)
-    {
-        version ??= metadata?.Version ?? Path.GetFileName(versionDir);
-        var entries = Directory.EnumerateFileSystemEntries(versionDir)
+    /// <summary>Ficheros de una carpeta de versión sin metadatos (copiada a mano).</summary>
+    private static List<InstalledFile> FilesInFolder(string versionDir, string version) =>
+        Directory.EnumerateFileSystemEntries(versionDir)
             .Select(Path.GetFileName)
             .Where(name => name is not null && !string.Equals(name, VersionMetadata.FileName, StringComparison.OrdinalIgnoreCase))
             .Cast<string>()
+            .Select(name => new InstalledFile(AssetClassifier.GetKey(name, version), name, name, null, false, null, IsPrerelease: false))
             .ToList();
-
-        // En el esquema 1 había un único fichero: hereda el sha256 y la fecha.
-        var single = entries.Count == 1 && metadata is not null;
-        return entries
-            .Select(name => new InstalledFile(
-                Packages.AssetClassifier.GetKey(name, version),
-                name,
-                name,
-                single ? metadata!.Sha256 : null,
-                single && metadata!.Verified,
-                metadata is not null && metadata.DownloadedAt != default ? metadata.DownloadedAt : null,
-                IsPrerelease: false))
-            .ToList();
-    }
-
-    private static VersionFileMetadata ToMetadata(InstalledFile file) => new()
-    {
-        Key = file.Key,
-        FileName = file.FileName,
-        Path = file.RelativePath,
-        Sha256 = file.Sha256,
-        Verified = file.Verified,
-        DownloadedAt = file.DownloadedAt ?? default,
-        Prerelease = file.IsPrerelease,
-        ReleasedAt = file.ReleasedAt,
-    };
 
     private static VersionMetadata? ReadMetadata(string metadataFile)
     {
@@ -197,8 +189,8 @@ public sealed class LibrarySnapshot
     public static LibrarySnapshot Empty { get; } = new([]);
 
     /// <summary>
-    /// Versiones de una app, de la más nueva a la más antigua. Se reconocen por el id
-    /// de sus metadatos o, si no tienen (copiadas a mano), por el nombre de la carpeta.
+    /// Versiones descargadas de una app (de todos sus ficheros), de la más nueva a la más
+    /// antigua. Se reconocen por el id de sus metadatos o, si no tienen, por la carpeta.
     /// </summary>
     public IReadOnlyList<InstalledVersion> GetVersions(HomebrewApp app)
     {
@@ -210,10 +202,21 @@ public sealed class LibrarySnapshot
             .Select(v => v.Version)
             .ToList();
 
-        // De la más nueva a la más antigua: por fecha de release si se conoce, si no por versión.
-        list.Sort((a, b) => Packages.ReleaseOrder.Compare(b.Version, ReleasedAt(b), a.Version, ReleasedAt(a)));
+        list.Sort((a, b) => ReleaseOrder.Compare(b.Version, ReleasedAt(b), a.Version, ReleasedAt(a)));
         return list;
     }
+
+    /// <summary>Versiones que sobran si solo se conserva la más nueva de cada fichero.</summary>
+    public static IReadOnlyList<InstalledVersion> AllButLatestPerFile(IEnumerable<InstalledVersion> versions) =>
+        versions
+            .GroupBy(v => v.Files.FirstOrDefault()?.Key ?? v.FolderPath, StringComparer.OrdinalIgnoreCase)
+            .SelectMany(g =>
+            {
+                var sorted = g.ToList();
+                sorted.Sort((a, b) => ReleaseOrder.Compare(b.Version, ReleasedAt(b), a.Version, ReleasedAt(a)));
+                return sorted.Skip(1);
+            })
+            .ToList();
 
     private static DateTimeOffset? ReleasedAt(InstalledVersion version) =>
         version.Files.Select(f => f.ReleasedAt).Where(d => d is not null).Max();

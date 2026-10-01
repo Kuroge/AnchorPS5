@@ -161,7 +161,8 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
                 this,
                 PackageStatus.Compute(packages[i], library.GetVersions(e.App)),
                 _newIds.Contains(e.App.Id),
-                _library.GetAppFolder(e.App)))
+                _library.GetAppFolder(e.App),
+                key => _library.GetFileFolder(e.App, key)))
             .ToList();
 
         // Descargas que siguen en marcha (o fallidas) tras recargar.
@@ -220,8 +221,13 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
 
     public void OpenFolder(string path)
     {
-        // Si la carpeta aún no existe, se abre la de descargas.
-        var target = Directory.Exists(path) ? path : _library.DownloadPath;
+        // Si la carpeta aún no existe, se abre la más cercana que sí exista (como mucho, la de descargas).
+        var target = path;
+        while (!Directory.Exists(target) && Path.GetDirectoryName(target) is { } parent
+            && parent.StartsWith(_library.DownloadPath, StringComparison.OrdinalIgnoreCase))
+            target = parent;
+        if (!Directory.Exists(target))
+            target = _library.DownloadPath;
         try
         {
             Directory.CreateDirectory(target);
@@ -235,11 +241,8 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         }
     }
 
-    public void DeleteVersion(CatalogItemViewModel item, InstalledVersion version) =>
-        RunDelete(item, () => _library.DeleteVersion(version));
-
-    public void DeleteAll(CatalogItemViewModel item) =>
-        RunDelete(item, () => _library.DeleteVersions(item.Versions));
+    public void DeleteVersions(CatalogItemViewModel item, IReadOnlyList<InstalledVersion> versions) =>
+        RunDelete(item, () => _library.DeleteVersions(versions));
 
     private async void RunDelete(CatalogItemViewModel item, Action delete)
     {

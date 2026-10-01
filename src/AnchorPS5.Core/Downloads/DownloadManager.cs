@@ -142,7 +142,7 @@ public sealed class DownloadManager
                 entryPath = filePath;
             }
 
-            var versionDir = _library.GetVersionFolder(job.App, job.Version);
+            var versionDir = _library.GetVersionFolder(job.App, job.File.Key, job.Version);
             await _finalize.WaitAsync(CancellationToken.None);
             try
             {

@@ -57,7 +57,7 @@ public sealed class DownloadManagerTests : IDisposable
         var job = await RunToEnd(manager, App());
 
         Assert.Equal(DownloadPhase.Completed, job.Phase);
-        Assert.Equal(Path.Combine(_downloads, "Hola Mundo", "1.0.0"), job.InstalledPath);
+        Assert.Equal(Path.Combine(_downloads, "Hola Mundo", "hola", "1.0.0"), job.InstalledPath);
         Assert.Equal(Payload, File.ReadAllBytes(Path.Combine(job.InstalledPath!, "hola.elf")));
         Assert.False(extractor.Called);
 

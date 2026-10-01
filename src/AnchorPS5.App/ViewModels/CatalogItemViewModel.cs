@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using AnchorPS5.Core;
 using AnchorPS5.Core.Catalog;
 using AnchorPS5.Core.Library;
@@ -18,8 +17,7 @@ public interface IPackageActions
 {
     void Download(CatalogItemViewModel item, PackageFileViewModel file);
     void OpenFolder(string path);
-    void DeleteVersion(CatalogItemViewModel item, InstalledVersion version);
-    void DeleteAll(CatalogItemViewModel item);
+    void DeleteVersions(CatalogItemViewModel item, IReadOnlyList<InstalledVersion> versions);
 }
 
 /// <summary>Tarjeta y detalle de una app del catálogo, con sus ficheros y su estado en la biblioteca.</summary>
@@ -27,9 +25,11 @@ public sealed partial class CatalogItemViewModel : ObservableObject
 {
     private readonly LocalizationService _localization;
     private readonly IPackageActions _actions;
+    private readonly Func<string, string> _fileFolder;
     private ImageSource? _icon;
     private IReadOnlyList<InstalledVersion> _versions = [];
 
+    /// <param name="fileFolder">Carpeta de un fichero de esta app a partir de su clave.</param>
     public CatalogItemViewModel(
         CatalogEntry entry,
         ResolvedPackage package,
@@ -37,10 +37,12 @@ public sealed partial class CatalogItemViewModel : ObservableObject
         IPackageActions actions,
         PackageStatus status,
         bool isNew,
-        string appFolder)
+        string appFolder,
+        Func<string, string> fileFolder)
     {
         _localization = localization;
         _actions = actions;
+        _fileFolder = fileFolder;
         Entry = entry;
         Package = package;
         IsNew = isNew;
@@ -48,7 +50,6 @@ public sealed partial class CatalogItemViewModel : ObservableObject
         Description = string.IsNullOrWhiteSpace(entry.App.Description)
             ? localization.Get("detail.noDescription")
             : entry.App.Description;
-        DeleteAllConfirmText = localization.Format("confirm.deleteAll", entry.App.Name);
         BetaText = package.BetaVersion is { } beta ? localization.Format("file.betaChip", beta) : string.Empty;
         FilesTitle = package.DisplayVersion is { } v ? localization.Format("detail.filesTitle", v) : localization.Get("detail.filesTitleNoVersion");
         SetStatus(status);
@@ -64,7 +65,6 @@ public sealed partial class CatalogItemViewModel : ObservableObject
     public string Author => Entry.App.Author;
     public string Description { get; }
     public string SourceName => Entry.Source.Name;
-    public string DeleteAllConfirmText { get; }
     public string FilesTitle { get; }
 
     /// <summary>Versión publicada: la de GitHub o, si no hay, la del catálogo.</summary>
@@ -87,7 +87,7 @@ public sealed partial class CatalogItemViewModel : ObservableObject
         : "—";
 
     /// <summary>Glifo de la fuente: nube si es remota, carpeta si es local.</summary>
-    public string SourceGlyph => Entry.Source.Type == SourceType.Remote ? "" : "";
+    public string SourceGlyph => Entry.Source.Type == SourceType.Remote ? "\uE753" : "\uE8B7";
 
     /// <summary>Carpeta de la app dentro de la de descargas.</summary>
     public string AppFolder { get; }
@@ -112,34 +112,42 @@ public sealed partial class CatalogItemViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsDownloaded), nameof(HasUpdate), nameof(IsNotDownloaded), nameof(ShowDownloadButton), nameof(ShowDownloadMenu), nameof(ShowUpdateButton))]
     public partial PackageState State { get; private set; }
 
+    /// <summary>Resumen corto: "No descargada", "Descargada · v1.0", "0.21 → 0.21.1", "2 actualizaciones".</summary>
     [ObservableProperty]
     public partial string StatusText { get; private set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial string StatusTitle { get; private set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial string StatusDetail { get; private set; } = string.Empty;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasInstalledVersions))]
-    public partial IReadOnlyList<InstalledVersionViewModel> InstalledVersions { get; private set; } = [];
 
     public bool IsNotDownloaded => State == PackageState.NotDownloaded;
     public bool IsDownloaded => State == PackageState.Downloaded;
     public bool HasUpdate => State == PackageState.UpdateAvailable;
-    public bool HasInstalledVersions => InstalledVersions.Count > 0;
+
+    /// <summary>Todo lo descargado de la app (todos sus ficheros y versiones).</summary>
+    public IReadOnlyList<InstalledVersion> Versions => _versions;
+
+    public bool HasInstalledVersions => _versions.Count > 0;
+
+    /// <summary>Algún fichero tiene más de una versión descargada.</summary>
+    public bool HasManyVersionsOfAnyFile => LibrarySnapshot.AllButLatestPerFile(_versions).Count > 0;
 
     // ---- Descargas en curso (una por fichero) ----
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsBusy), nameof(IsIdle), nameof(ShowDownloadButton), nameof(ShowDownloadMenu), nameof(ShowUpdateButton))]
+    [NotifyPropertyChangedFor(nameof(IsBusy), nameof(IsIdle))]
     public partial DownloadJobViewModel? ActiveJob { get; private set; }
 
     public bool IsBusy => ActiveJob is { IsActive: true };
     public bool IsIdle => !IsBusy;
-    public bool ShowDownloadButton => IsNotDownloaded && HasSingleFile;
-    public bool ShowDownloadMenu => HasManyFiles;
+    public bool ShowDownloadButton => IsNotDownloaded && HasSingleFile && !IsAllUpToDate;
+    public bool ShowDownloadMenu => HasManyFiles && !IsAllUpToDate;
+
+    /// <summary>Tienes todos los ficheros publicados (estables) en su última versión.</summary>
+    public bool IsAllUpToDate
+    {
+        get
+        {
+            var stable = Files.Where(f => f.CanDownload && !f.IsBeta).ToList();
+            return stable.Count > 0 && stable.All(f => f.IsUpToDate);
+        }
+    }
     public bool ShowUpdateButton => HasUpdate;
 
     /// <summary>Error de la última acción (borrar, abrir carpeta…), aparte de los de descarga.</summary>
@@ -181,10 +189,12 @@ public sealed partial class CatalogItemViewModel : ObservableObject
     [RelayCommand]
     private void OpenFolder() => _actions.OpenFolder(AppFolder);
 
-    [RelayCommand]
-    private void DeleteAll() => _actions.DeleteAll(this);
-
-    public IReadOnlyList<InstalledVersion> Versions => _versions;
+    /// <summary>Borra versiones (ya confirmado por la vista).</summary>
+    public void DeleteVersions(IReadOnlyList<InstalledVersion> versions)
+    {
+        if (versions.Count > 0)
+            _actions.DeleteVersions(this, versions);
+    }
 
     public void SetStatus(PackageStatus status)
     {
@@ -200,48 +210,43 @@ public sealed partial class CatalogItemViewModel : ObservableObject
             .ThenBy(f => f.Available?.Order ?? int.MaxValue)
             .ThenBy(f => f.Key, StringComparer.OrdinalIgnoreCase))
         {
-            var row = new PackageFileViewModel(fileStatus, _localization, DownloadFile);
+            var versionsOfFile = status.Versions
+                .Where(v => v.Files.Any(f => string.Equals(f.Key, fileStatus.Key, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            var row = new PackageFileViewModel(
+                fileStatus,
+                versionsOfFile,
+                _fileFolder(fileStatus.Key),
+                _localization,
+                DownloadFile,
+                _actions.OpenFolder,
+                DeleteVersions);
             if (jobs.TryGetValue((row.Key, row.File?.Version), out var job))
                 row.ActiveJob = job;
             Files.Add(row);
         }
 
         State = status.State;
-        InstalledVersions = status.Versions
-            .Select(v => new InstalledVersionViewModel(
-                v,
-                _localization,
-                open: () => _actions.OpenFolder(v.FolderPath),
-                delete: () => _actions.DeleteVersion(this, v)))
-            .ToList();
-
-        var installed = status.Latest?.Version ?? string.Empty;
         var updates = status.Updates.ToList();
-        (StatusText, StatusTitle) = status.State switch
+        StatusText = status.State switch
         {
-            PackageState.UpdateAvailable when updates.Count > 1 => (
-                _localization.Format("status.updatesMany", updates.Count),
-                _localization.Format("status.updatesManyTitle", updates.Count)),
-            PackageState.UpdateAvailable => (
-                _localization.Format("status.update", updates.FirstOrDefault()?.Installed?.Version.Version ?? installed, updates.FirstOrDefault()?.Available?.Version ?? Version),
-                _localization.Format("status.updateTitle", updates.FirstOrDefault()?.Installed?.Version.Version ?? installed, updates.FirstOrDefault()?.Available?.Version ?? Version)),
-            PackageState.Downloaded => (
-                _localization.Format("status.downloaded", installed),
-                _localization.Format("status.downloaded", installed)),
-            _ => (_localization.Get("status.notDownloaded"), _localization.Get("status.notDownloaded")),
+            PackageState.UpdateAvailable when updates.Count > 1 => _localization.Format("status.updatesMany", updates.Count),
+            PackageState.UpdateAvailable => _localization.Format(
+                "status.update",
+                updates.FirstOrDefault()?.Installed?.Version.Version ?? status.Latest?.Version,
+                updates.FirstOrDefault()?.Available?.Version ?? Version),
+            PackageState.Downloaded => _localization.Format("status.downloaded", status.Latest?.Version),
+            _ => _localization.Get("status.notDownloaded"),
         };
 
-        StatusDetail = status.Versions.Count switch
-        {
-            0 => _localization.Format("detail.willSaveTo", AppFolder),
-            1 => _localization.Format("detail.versionCountOne", AppFolder),
-            var n => _localization.Format("detail.versionCountMany", n, AppFolder),
-        };
-
+        OnPropertyChanged(nameof(Versions));
+        OnPropertyChanged(nameof(HasInstalledVersions));
+        OnPropertyChanged(nameof(HasManyVersionsOfAnyFile));
         OnPropertyChanged(nameof(HasSingleFile));
         OnPropertyChanged(nameof(HasManyFiles));
         OnPropertyChanged(nameof(HasFiles));
         OnPropertyChanged(nameof(DownloadableFiles));
+        OnPropertyChanged(nameof(IsAllUpToDate));
         OnPropertyChanged(nameof(ShowDownloadButton));
         OnPropertyChanged(nameof(ShowDownloadMenu));
         RefreshActiveJob();
@@ -252,40 +257,4 @@ public sealed partial class CatalogItemViewModel : ObservableObject
 
     /// <summary>Lo que anuncian los lectores de pantalla para cada tarjeta.</summary>
     public override string ToString() => Name;
-}
-
-/// <summary>Una versión descargada, para la lista del detalle.</summary>
-public sealed partial class InstalledVersionViewModel
-{
-    private readonly Action _open;
-    private readonly Action _delete;
-
-    public InstalledVersionViewModel(InstalledVersion version, LocalizationService localization, Action open, Action delete)
-    {
-        _open = open;
-        _delete = delete;
-        Version = "v" + version.Version;
-        FolderPath = version.FolderPath;
-        var when = version.DownloadedAt is { } date
-            ? localization.Format("detail.downloadedAt", date.ToLocalTime().ToString("d", CultureInfo.CurrentCulture))
-            : localization.Get("detail.manualCopy");
-        var parts = new List<string> { when };
-        if (version.Verified)
-            parts.Add(localization.Get("detail.verified"));
-        if (version.Files.Count > 0)
-            parts.Add(string.Join(", ", version.Files.Select(f => f.FileName)));
-        Detail = string.Join(" · ", parts);
-        DeleteConfirmText = localization.Format("confirm.deleteVersion", Version);
-    }
-
-    public string Version { get; }
-    public string FolderPath { get; }
-    public string Detail { get; }
-    public string DeleteConfirmText { get; }
-
-    [RelayCommand]
-    private void Open() => _open();
-
-    [RelayCommand]
-    private void Delete() => _delete();
 }

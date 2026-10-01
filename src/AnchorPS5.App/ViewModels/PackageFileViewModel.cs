@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using AnchorPS5.Core;
 using AnchorPS5.Core.Library;
 using AnchorPS5.Core.Localization;
@@ -8,15 +9,29 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AnchorPS5.App.ViewModels;
 
-/// <summary>Una fila de "Archivos": un fichero publicado (o descargado) con su estado propio.</summary>
+/// <summary>
+/// Ficha de un fichero: lo publicado (o lo que tienes si ya no se publica), su estado
+/// propio y el histórico de versiones descargadas de ese fichero.
+/// </summary>
 public sealed partial class PackageFileViewModel : ObservableObject
 {
     private readonly Action<PackageFileViewModel> _download;
+    private readonly Action<string> _openFolder;
 
-    public PackageFileViewModel(FileStatus status, LocalizationService localization, Action<PackageFileViewModel> download)
+    public PackageFileViewModel(
+        FileStatus status,
+        IReadOnlyList<InstalledVersion> versions,
+        string folderPath,
+        LocalizationService localization,
+        Action<PackageFileViewModel> download,
+        Action<string> openFolder,
+        Action<IReadOnlyList<InstalledVersion>> delete)
     {
         Status = status;
         _download = download;
+        _openFolder = openFolder;
+        FolderPath = folderPath;
+        InstalledVersions = versions;
 
         var file = status.Available;
         var installedVersion = status.Installed?.Version.Version;
@@ -39,6 +54,10 @@ public sealed partial class PackageFileViewModel : ObservableObject
         };
         DownloadText = localization.Get(status.State == FileState.UpdateAvailable ? "action.updateFile" : "action.download");
         MenuText = string.Join("  ·  ", new[] { Label, IsPs4 ? "PS4" : null, IsBeta ? "beta" : null, SizeText }.Where(s => !string.IsNullOrEmpty(s)));
+
+        Versions = versions
+            .Select(v => new FileVersionViewModel(v, localization, () => openFolder(v.FolderPath), () => delete([v])))
+            .ToList();
     }
 
     public FileStatus Status { get; }
@@ -63,6 +82,28 @@ public sealed partial class PackageFileViewModel : ObservableObject
 
     public bool IsUpToDate => Status.State == FileState.UpToDate;
     public bool HasUpdate => Status.State == FileState.UpdateAvailable;
+
+    /// <summary>
+    /// Ficha resaltada en dorado: solo si la actualización cuenta (una beta cuando usas la
+    /// estable es opcional y no se resalta).
+    /// </summary>
+    public bool HighlightUpdate => HasUpdate && Status.CountsForUpdate;
+
+    // ---- Histórico de este fichero ----
+
+    /// <summary>Carpeta del fichero, con todas sus versiones: &lt;App&gt;\&lt;fichero&gt;.</summary>
+    public string FolderPath { get; }
+
+    /// <summary>Versiones descargadas de este fichero, de la más nueva a la más antigua.</summary>
+    public IReadOnlyList<InstalledVersion> InstalledVersions { get; }
+
+    public IReadOnlyList<FileVersionViewModel> Versions { get; }
+
+    public bool HasVersions => Versions.Count > 0;
+    public bool HasNoVersions => Versions.Count == 0;
+    public bool HasManyVersions => Versions.Count > 1;
+
+    // ---- Descarga en curso ----
 
     /// <summary>Muestra el botón de descargar/actualizar (no si ya está al día ni mientras descarga).</summary>
     public bool ShowDownloadButton => CanDownload && !IsUpToDate && !IsBusy;
@@ -100,4 +141,47 @@ public sealed partial class PackageFileViewModel : ObservableObject
 
     [RelayCommand]
     private void Retry() => ActiveJob?.RetryCommand.Execute(null);
+
+    [RelayCommand]
+    private void OpenFolder() => _openFolder(FolderPath);
+}
+
+/// <summary>Una versión descargada de un fichero, dentro de su histórico.</summary>
+public sealed partial class FileVersionViewModel
+{
+    private readonly Action _open;
+    private readonly Action _delete;
+
+    public FileVersionViewModel(InstalledVersion version, LocalizationService localization, Action open, Action delete)
+    {
+        Installed = version;
+        _open = open;
+        _delete = delete;
+        VersionText = "v" + version.Version;
+        FolderPath = version.FolderPath;
+
+        var file = version.Files.FirstOrDefault();
+        IsBeta = file?.IsPrerelease ?? false;
+        var parts = new List<string>
+        {
+            version.DownloadedAt is { } date
+                ? localization.Format("detail.downloadedAt", date.ToLocalTime().ToString("d", CultureInfo.CurrentCulture))
+                : localization.Get("detail.manualCopy"),
+        };
+        if (version.Verified)
+            parts.Add(localization.Get("detail.verified"));
+        Detail = string.Join(" · ", parts);
+    }
+
+    public InstalledVersion Installed { get; }
+    public string VersionText { get; }
+    public string FolderPath { get; }
+    public string Detail { get; }
+    public bool IsBeta { get; }
+
+    [RelayCommand]
+    private void Open() => _open();
+
+    /// <summary>Lo llama la vista tras confirmar.</summary>
+    public void Delete() => _delete();
 }
