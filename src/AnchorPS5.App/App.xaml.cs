@@ -2,6 +2,7 @@ using System.Globalization;
 using AnchorPS5.Core;
 using AnchorPS5.Core.Catalog;
 using AnchorPS5.Core.Configuration;
+using AnchorPS5.Core.Library;
 using AnchorPS5.Core.Localization;
 using AnchorPS5.Core.Models;
 using Microsoft.UI.Xaml;
@@ -27,6 +28,8 @@ public partial class App : Application
     public static HttpClient Http { get; } = CreateHttpClient();
 
     public static SourceLoader SourceLoader { get; } = new(Http, Paths.ConfigDirectory);
+
+    public static SeenAppsService SeenApps { get; } = new(Paths);
 
     public static AppConfig Config { get; private set; } = null!;
 

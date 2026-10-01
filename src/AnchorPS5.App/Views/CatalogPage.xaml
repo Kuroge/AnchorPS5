@@ -18,20 +18,30 @@
 
     <Grid Padding="32,20,32,0" RowDefinitions="Auto,Auto,*" RowSpacing="16">
         <!-- Cabecera -->
-        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
             <StackPanel VerticalAlignment="Center" Spacing="2">
-                <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="{l:Loc Key=nav.catalog}" />
+                <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind ViewModel.Title, Mode=OneWay}" />
                 <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind ViewModel.CountText, Mode=OneWay}" />
             </StackPanel>
-            <AutoSuggestBox
+            <ComboBox
                 Grid.Column="1"
+                MinWidth="150"
+                VerticalAlignment="Center"
+                AutomationProperties.Name="{l:Loc Key=catalog.sort}"
+                SelectedIndex="{x:Bind ViewModel.SortIndex, Mode=TwoWay}"
+                ToolTipService.ToolTip="{l:Loc Key=catalog.sort}">
+                <ComboBoxItem Content="{l:Loc Key=catalog.sort.name}" />
+                <ComboBoxItem Content="{l:Loc Key=catalog.sort.whatsNew}" />
+            </ComboBox>
+            <AutoSuggestBox
+                Grid.Column="2"
                 Width="300"
                 VerticalAlignment="Center"
                 PlaceholderText="{l:Loc Key=search.placeholder}"
                 QueryIcon="Find"
                 Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Button
-                Grid.Column="2"
+                Grid.Column="3"
                 VerticalAlignment="Center"
                 AutomationProperties.Name="{l:Loc Key=catalog.refresh}"
                 Command="{x:Bind ViewModel.LoadCommand}"
@@ -61,9 +71,10 @@
                 <DataTemplate x:DataType="vm:CatalogItemViewModel">
                     <Border
                         Width="248"
+                        Height="188"
                         Padding="16"
                         Style="{StaticResource CardStyle}">
-                        <Grid RowDefinitions="Auto,Auto" RowSpacing="14">
+                        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                                 <!-- Icono, o un paquete sobre azul si la app no trae -->
                                 <Grid
@@ -119,6 +130,51 @@
                                         Text="{x:Bind SizeText}" />
                                 </Border>
                             </StackPanel>
+
+                            <!-- Estado en la biblioteca -->
+                            <StackPanel
+                                Grid.Row="2"
+                                VerticalAlignment="Bottom"
+                                Orientation="Horizontal"
+                                Spacing="6">
+                                <FontIcon
+                                    FontSize="14"
+                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                    Glyph="&#xE896;"
+                                    Visibility="{x:Bind IsNotDownloaded, Mode=OneWay}" />
+                                <FontIcon
+                                    FontSize="14"
+                                    Foreground="{ThemeResource AnchorBlueBrush}"
+                                    Glyph="&#xE73E;"
+                                    Visibility="{x:Bind IsDownloaded, Mode=OneWay}" />
+                                <FontIcon
+                                    FontSize="14"
+                                    Foreground="{ThemeResource AnchorGoldBrush}"
+                                    Glyph="&#xE74A;"
+                                    Visibility="{x:Bind HasUpdate, Mode=OneWay}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind StatusText, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <!-- Nueva -->
+                            <Border
+                                Grid.RowSpan="3"
+                                Margin="0,-6,-6,0"
+                                Padding="8,2"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Background="{ThemeResource AnchorGoldBrush}"
+                                CornerRadius="10"
+                                Visibility="{x:Bind IsNew}">
+                                <TextBlock
+                                    FontWeight="SemiBold"
+                                    Foreground="#1C1C1C"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{l:Loc Key=status.new}" />
+                            </Border>
                         </Grid>
                     </Border>
                 </DataTemplate>

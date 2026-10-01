@@ -1,12 +1,15 @@
+using System.ComponentModel;
 using AnchorPS5.App.ViewModels;
+using AnchorPS5.Core.Catalog;
+using AnchorPS5.Core.Library;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 
 namespace AnchorPS5.App.Views;
 
-/// <summary>Armazón principal: menú lateral + marco de contenido con navegación atrás.</summary>
+/// <summary>Armazón principal: secciones del catálogo con contadores + marco de contenido.</summary>
 public sealed partial class ShellPage : Page
 {
     private readonly CatalogViewModel _catalog;
@@ -15,7 +18,14 @@ public sealed partial class ShellPage : Page
     {
         InitializeComponent();
 
-        _catalog = new CatalogViewModel(App.SourceLoader, App.Config.Sources, App.Localization);
+        _catalog = new CatalogViewModel(
+            App.SourceLoader,
+            App.Config.Sources,
+            App.Localization,
+            new LibraryService(App.Config.DownloadPath),
+            App.SeenApps);
+        _catalog.PropertyChanged += OnCatalogPropertyChanged;
+
         NavView.SelectedItem = CatalogItem;
         ContentFrame.Navigate(typeof(CatalogPage), _catalog);
     }
@@ -31,8 +41,13 @@ public sealed partial class ShellPage : Page
 
     public void TogglePane() => NavView.IsPaneOpen = !NavView.IsPaneOpen;
 
-    private void OnCatalogTapped(object sender, TappedRoutedEventArgs e)
+    private void OnItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
+        if (args.InvokedItemContainer?.Tag is not string tag || !Enum.TryParse<CatalogFilter>(tag, out var filter))
+            return;
+
+        _catalog.Filter = filter;
+
         // Desde el detalle, volver al grid limpiando la pila.
         if (ContentFrame.CurrentSourcePageType != typeof(CatalogPage))
         {
@@ -40,6 +55,28 @@ public sealed partial class ShellPage : Page
             ContentFrame.BackStack.Clear();
             CanGoBackChanged?.Invoke(this, false);
         }
+    }
+
+    private void OnCatalogPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(CatalogViewModel.DownloadedCount):
+                SetBadge(DownloadedBadge, _catalog.DownloadedCount);
+                break;
+            case nameof(CatalogViewModel.UpdatesCount):
+                SetBadge(UpdatesBadge, _catalog.UpdatesCount);
+                break;
+            case nameof(CatalogViewModel.NewCount):
+                SetBadge(NewBadge, _catalog.NewCount);
+                break;
+        }
+    }
+
+    private static void SetBadge(InfoBadge badge, int count)
+    {
+        badge.Value = count;
+        badge.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnNavigated(object sender, NavigationEventArgs e) => CanGoBackChanged?.Invoke(this, ContentFrame.CanGoBack);

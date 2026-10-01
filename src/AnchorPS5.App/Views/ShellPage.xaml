@@ -13,15 +13,50 @@
         IsPaneToggleButtonVisible="False"
         IsSettingsVisible="False"
         IsTitleBarAutoPaddingEnabled="False"
+        ItemInvoked="OnItemInvoked"
         PaneDisplayMode="Auto">
         <NavigationView.MenuItems>
             <NavigationViewItem
                 x:Name="CatalogItem"
                 Content="{l:Loc Key=nav.catalog}"
-                Tapped="OnCatalogTapped">
+                Tag="All">
                 <NavigationViewItem.Icon>
-                    <FontIcon Glyph="&#xE7B8;" />
+                    <FontIcon Glyph="&#xE8F1;" />
                 </NavigationViewItem.Icon>
+            </NavigationViewItem>
+
+            <NavigationViewItemSeparator />
+
+            <NavigationViewItem Content="{l:Loc Key=nav.downloaded}" Tag="Downloaded">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE896;" />
+                </NavigationViewItem.Icon>
+                <NavigationViewItem.InfoBadge>
+                    <InfoBadge
+                        x:Name="DownloadedBadge"
+                        Background="{ThemeResource ControlStrongFillColorDefaultBrush}"
+                        Visibility="Collapsed" />
+                </NavigationViewItem.InfoBadge>
+            </NavigationViewItem>
+            <NavigationViewItem Content="{l:Loc Key=nav.updates}" Tag="Updates">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE895;" />
+                </NavigationViewItem.Icon>
+                <NavigationViewItem.InfoBadge>
+                    <InfoBadge x:Name="UpdatesBadge" Visibility="Collapsed" />
+                </NavigationViewItem.InfoBadge>
+            </NavigationViewItem>
+            <NavigationViewItem Content="{l:Loc Key=nav.new}" Tag="New">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE735;" />
+                </NavigationViewItem.Icon>
+                <NavigationViewItem.InfoBadge>
+                    <InfoBadge
+                        x:Name="NewBadge"
+                        Background="#F2C14E"
+                        Foreground="#1C1C1C"
+                        Visibility="Collapsed" />
+                </NavigationViewItem.InfoBadge>
             </NavigationViewItem>
         </NavigationView.MenuItems>
         <NavigationView.FooterMenuItems>
