@@ -8,6 +8,66 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Colores de AnchorPS5: el azul de PlayStation y el dorado de las chispas del
+                 arranque de PS5. Más claros en tema oscuro, más profundos en tema claro.
+                 El acento del sistema se sustituye por el azul, así botones, selección y
+                 barras de progreso usan el color de la app. -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="AnchorBlueBrush" Color="#4DA3FF" />
+                    <SolidColorBrush x:Key="AnchorGoldBrush" Color="#F2C14E" />
+                    <SolidColorBrush x:Key="AnchorBlueTintBrush" Color="#264DA3FF" />
+                    <SolidColorBrush x:Key="AnchorGoldTintBrush" Color="#26F2C14E" />
+
+                    <Color x:Key="SystemAccentColor">#0070D1</Color>
+                    <Color x:Key="SystemAccentColorLight1">#2E8BE6</Color>
+                    <Color x:Key="SystemAccentColorLight2">#5AA9F2</Color>
+                    <Color x:Key="SystemAccentColorLight3">#8EC5F7</Color>
+                    <Color x:Key="SystemAccentColorDark1">#005DB0</Color>
+                    <Color x:Key="SystemAccentColorDark2">#004A8F</Color>
+                    <Color x:Key="SystemAccentColorDark3">#003791</Color>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AnchorBlueBrush" Color="#0070D1" />
+                    <SolidColorBrush x:Key="AnchorGoldBrush" Color="#A67C00" />
+                    <SolidColorBrush x:Key="AnchorBlueTintBrush" Color="#1A0070D1" />
+                    <SolidColorBrush x:Key="AnchorGoldTintBrush" Color="#1FD4AC28" />
+
+                    <Color x:Key="SystemAccentColor">#0070D1</Color>
+                    <Color x:Key="SystemAccentColorLight1">#2E8BE6</Color>
+                    <Color x:Key="SystemAccentColorLight2">#5AA9F2</Color>
+                    <Color x:Key="SystemAccentColorLight3">#8EC5F7</Color>
+                    <Color x:Key="SystemAccentColorDark1">#005DB0</Color>
+                    <Color x:Key="SystemAccentColorDark2">#004A8F</Color>
+                    <Color x:Key="SystemAccentColorDark3">#003791</Color>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
+            <Style x:Key="CardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="16,12" />
+            </Style>
+
+            <!-- Etiqueta pequeña redondeada (versión, tamaño…) -->
+            <Style x:Key="ChipStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource AnchorBlueTintBrush}" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Padding" Value="8,2" />
+            </Style>
+
+            <Style x:Key="SecondaryTextStyle" BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+
+            <Style x:Key="CaptionSecondaryTextStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

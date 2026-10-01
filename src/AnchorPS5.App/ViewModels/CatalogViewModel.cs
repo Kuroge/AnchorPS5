@@ -37,6 +37,12 @@ public sealed partial class CatalogViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasSourceErrors))]
     public partial string SourceErrors { get; set; } = string.Empty;
 
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    public partial string CountText { get; set; } = string.Empty;
+
     public bool HasStatus => StatusMessage.Length > 0;
 
     public bool HasSourceErrors => SourceErrors.Length > 0;
@@ -46,11 +52,14 @@ public sealed partial class CatalogViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadAsync()
     {
-        StatusMessage = _localization.Get("catalog.loading");
+        IsLoading = true;
+        StatusMessage = string.Empty;
         SourceErrors = string.Empty;
+        CountText = string.Empty;
         Items.Clear();
 
         var result = await _loader.LoadAllAsync(_sources);
+        IsLoading = false;
 
         _all = result.Entries.Select(e => new CatalogItemViewModel(e, _localization)).ToList();
         SourceErrors = string.Join(Environment.NewLine, result.FailedSources.Select(f =>
@@ -68,6 +77,10 @@ public sealed partial class CatalogViewModel : ObservableObject
         Items.Clear();
         foreach (var item in _all.Where(i => visible.Contains(i.Entry)))
             Items.Add(item);
+
+        CountText = _all.Count == 1
+            ? _localization.Get("catalog.countOne")
+            : _localization.Format("catalog.countMany", _all.Count);
 
         StatusMessage = _all.Count == 0 ? _localization.Get("catalog.empty")
             : Items.Count == 0 ? _localization.Format("catalog.noResults", SearchText.Trim())

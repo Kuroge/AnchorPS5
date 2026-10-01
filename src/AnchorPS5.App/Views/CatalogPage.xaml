@@ -5,36 +5,38 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:l="using:AnchorPS5.App.Localization"
     xmlns:vm="using:AnchorPS5.App.ViewModels"
+    Background="Transparent"
     NavigationCacheMode="Required">
 
-    <Grid Padding="24,16,24,0" RowSpacing="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+    <Page.Resources>
+        <Style x:Key="CardContainerStyle" BasedOn="{StaticResource DefaultGridViewItemStyle}" TargetType="GridViewItem">
+            <Setter Property="Margin" Value="0,0,12,12" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+    </Page.Resources>
 
-        <Grid ColumnSpacing="12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock
-                VerticalAlignment="Center"
-                Style="{StaticResource TitleTextBlockStyle}"
-                Text="{l:Loc Key=nav.catalog}" />
+    <Grid Padding="32,20,32,0" RowDefinitions="Auto,Auto,*" RowSpacing="16">
+        <!-- Cabecera -->
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <StackPanel VerticalAlignment="Center" Spacing="2">
+                <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="{l:Loc Key=nav.catalog}" />
+                <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind ViewModel.CountText, Mode=OneWay}" />
+            </StackPanel>
             <AutoSuggestBox
                 Grid.Column="1"
-                Width="280"
+                Width="300"
+                VerticalAlignment="Center"
                 PlaceholderText="{l:Loc Key=search.placeholder}"
                 QueryIcon="Find"
                 Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Button
                 Grid.Column="2"
+                VerticalAlignment="Center"
+                AutomationProperties.Name="{l:Loc Key=catalog.refresh}"
                 Command="{x:Bind ViewModel.LoadCommand}"
                 ToolTipService.ToolTip="{l:Loc Key=catalog.refresh}">
-                <SymbolIcon Symbol="Refresh" />
+                <FontIcon FontSize="16" Glyph="&#xE72C;" />
             </Button>
         </Grid>
 
@@ -48,49 +50,108 @@
 
         <GridView
             Grid.Row="2"
+            Margin="0,0,-12,0"
+            Padding="0,0,0,24"
             IsItemClickEnabled="True"
             ItemClick="OnItemClick"
+            ItemContainerStyle="{StaticResource CardContainerStyle}"
             ItemsSource="{x:Bind ViewModel.Items}"
             SelectionMode="None">
             <GridView.ItemTemplate>
                 <DataTemplate x:DataType="vm:CatalogItemViewModel">
-                    <StackPanel
-                        Width="200"
+                    <Border
+                        Width="248"
                         Padding="16"
-                        Spacing="10">
-                        <Border
-                            Width="72"
-                            Height="72"
-                            HorizontalAlignment="Left"
-                            Background="{ThemeResource ControlFillColorSecondaryBrush}"
-                            CornerRadius="12">
-                            <Grid>
-                                <FontIcon FontSize="32" Glyph="&#xE71D;" />
-                                <Image Source="{x:Bind Icon}" Stretch="UniformToFill" />
+                        Style="{StaticResource CardStyle}">
+                        <Grid RowDefinitions="Auto,Auto" RowSpacing="14">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                                <!-- Icono, o un paquete sobre azul si la app no trae -->
+                                <Grid
+                                    Width="64"
+                                    Height="64"
+                                    CornerRadius="14">
+                                    <Grid.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Offset="0" Color="#1A8CFF" />
+                                            <GradientStop Offset="1" Color="#003791" />
+                                        </LinearGradientBrush>
+                                    </Grid.Background>
+                                    <FontIcon
+                                        FontSize="28"
+                                        Foreground="White"
+                                        Glyph="&#xE7B8;" />
+                                    <Image Source="{x:Bind Icon}" Stretch="UniformToFill" />
+                                </Grid>
+                                <StackPanel
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    Spacing="2">
+                                    <TextBlock
+                                        MaxLines="2"
+                                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                                        Text="{x:Bind Name}"
+                                        TextTrimming="CharacterEllipsis"
+                                        TextWrapping="Wrap" />
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind Author}"
+                                        TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
                             </Grid>
-                        </Border>
-                        <TextBlock
-                            Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind Name}"
-                            TextTrimming="CharacterEllipsis" />
-                        <TextBlock
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind VersionAuthor}"
-                            TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
+                            <StackPanel
+                                Grid.Row="1"
+                                Orientation="Horizontal"
+                                Spacing="6">
+                                <Border Style="{StaticResource ChipStyle}" Visibility="{x:Bind HasVersion}">
+                                    <TextBlock
+                                        Foreground="{ThemeResource AnchorBlueBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind VersionText}" />
+                                </Border>
+                                <Border
+                                    Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                    Style="{StaticResource ChipStyle}"
+                                    Visibility="{x:Bind HasSize}">
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind SizeText}" />
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
                 </DataTemplate>
             </GridView.ItemTemplate>
         </GridView>
 
-        <TextBlock
+        <!-- Cargando -->
+        <StackPanel
             Grid.Row="2"
-            Margin="0,48,0,0"
+            Margin="0,64,0,0"
             HorizontalAlignment="Center"
-            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-            Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
-            TextAlignment="Center"
-            TextWrapping="Wrap"
-            Visibility="{x:Bind ViewModel.HasStatus, Mode=OneWay}" />
+            Spacing="12"
+            Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}">
+            <ProgressRing HorizontalAlignment="Center" IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+            <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{l:Loc Key=catalog.loading}" />
+        </StackPanel>
+
+        <!-- Vacío / sin resultados -->
+        <StackPanel
+            Grid.Row="2"
+            MaxWidth="420"
+            Margin="0,64,0,0"
+            HorizontalAlignment="Center"
+            Spacing="12"
+            Visibility="{x:Bind ViewModel.HasStatus, Mode=OneWay}">
+            <FontIcon
+                FontSize="40"
+                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                Glyph="&#xE721;" />
+            <TextBlock
+                Style="{StaticResource SecondaryTextStyle}"
+                Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                TextAlignment="Center" />
+        </StackPanel>
     </Grid>
 </Page>

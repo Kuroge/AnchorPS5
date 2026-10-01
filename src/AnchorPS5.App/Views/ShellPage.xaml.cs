@@ -1,6 +1,7 @@
 using AnchorPS5.App.ViewModels;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 
 namespace AnchorPS5.App.Views;
@@ -19,22 +20,27 @@ public sealed partial class ShellPage : Page
         ContentFrame.Navigate(typeof(CatalogPage), _catalog);
     }
 
+    /// <summary>Avisa a la barra de título de si hay a dónde volver.</summary>
+    public event EventHandler<bool>? CanGoBackChanged;
+
+    public void GoBack()
+    {
+        if (ContentFrame.CanGoBack)
+            ContentFrame.GoBack(new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
+    }
+
+    public void TogglePane() => NavView.IsPaneOpen = !NavView.IsPaneOpen;
+
     private void OnCatalogTapped(object sender, TappedRoutedEventArgs e)
     {
         // Desde el detalle, volver al grid limpiando la pila.
         if (ContentFrame.CurrentSourcePageType != typeof(CatalogPage))
         {
-            ContentFrame.Navigate(typeof(CatalogPage), _catalog);
+            ContentFrame.Navigate(typeof(CatalogPage), _catalog, new EntranceNavigationTransitionInfo());
             ContentFrame.BackStack.Clear();
-            NavView.IsBackEnabled = false;
+            CanGoBackChanged?.Invoke(this, false);
         }
     }
 
-    private void OnBackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
-    {
-        if (ContentFrame.CanGoBack)
-            ContentFrame.GoBack();
-    }
-
-    private void OnNavigated(object sender, NavigationEventArgs e) => NavView.IsBackEnabled = ContentFrame.CanGoBack;
+    private void OnNavigated(object sender, NavigationEventArgs e) => CanGoBackChanged?.Invoke(this, ContentFrame.CanGoBack);
 }

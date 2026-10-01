@@ -2,6 +2,8 @@
   "_meta": { "code": "es", "name": "Español" },
 
   "app.title": "AnchorPS5",
+  "app.tagline": "Tu catálogo de homebrew para PS5.",
+  "app.versionBy": "Versión {0} · por {1}",
 
   "nav.catalog": "Catálogo",
   "nav.guide": "Guía",
@@ -9,7 +11,9 @@
   "setup.title": "Configuración inicial",
   "setup.subtitle": "Elige el idioma y la carpeta donde se guardarán las descargas. Podrás cambiarlo más adelante editando config/config.json.",
   "setup.language": "Idioma",
+  "setup.languageDescription": "Idioma de la interfaz. Se aplica al continuar.",
   "setup.downloadFolder": "Carpeta de descargas",
+  "setup.downloadFolderDescription": "Aquí se guardarán los paquetes que descargues.",
   "setup.browse": "Examinar…",
   "setup.confirm": "Continuar",
   "setup.invalidPath": "Indica la ruta completa de una carpeta (por ejemplo, C:\\Descargas).",
@@ -24,6 +28,8 @@
   "catalog.empty": "No hay aplicaciones en el catálogo. Revisa las fuentes en config/config.json.",
   "catalog.noResults": "Ninguna aplicación coincide con «{0}».",
   "catalog.versionAuthor": "v{0} · {1}",
+  "catalog.countOne": "1 aplicación",
+  "catalog.countMany": "{0} aplicaciones",
   "catalog.sourceErrors": "Algunas fuentes no se han podido cargar",
   "catalog.sourceError": "{0}: {1}",
   "catalog.error.invalidSource": "la fuente está mal configurada (revisa path/url)",
@@ -32,6 +38,10 @@
   "catalog.error.network": "no se ha podido conectar",
   "catalog.error.tooLarge": "el catálogo es demasiado grande",
 
+  "detail.descriptionTitle": "Descripción",
+  "detail.informationTitle": "Información",
+  "detail.copy": "Copiar",
+  "detail.copied": "Copiado",
   "detail.version": "Versión",
   "detail.author": "Autor",
   "detail.size": "Tamaño",

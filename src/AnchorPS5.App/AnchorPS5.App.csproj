@@ -8,6 +8,7 @@
     <RootNamespace>AnchorPS5.App</RootNamespace>
     <AssemblyName>AnchorPS5</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\AnchorPS5.ico</ApplicationIcon>
     <Platforms>x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
@@ -29,6 +30,14 @@
   <!-- Ficheros portables: se copian tal cual a la salida (config.json no se incluye: se crea al arrancar). -->
   <ItemGroup>
     <Content Include="config\**;lang\**;intro\**" Exclude="**\.gitkeep;config\config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Icono de la ventana (AppWindow.SetIcon necesita un fichero). -->
+  <ItemGroup>
+    <Content Include="Assets\AnchorPS5.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>

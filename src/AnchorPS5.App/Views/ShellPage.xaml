@@ -3,27 +3,34 @@
     x:Class="AnchorPS5.App.Views.ShellPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:l="using:AnchorPS5.App.Localization">
+    xmlns:l="using:AnchorPS5.App.Localization"
+    Background="Transparent">
 
+    <!-- Atrás y abrir/cerrar el menú están en la barra de título (MainWindow). -->
     <NavigationView
         x:Name="NavView"
-        BackRequested="OnBackRequested"
-        IsBackButtonVisible="Auto"
+        IsBackButtonVisible="Collapsed"
+        IsPaneToggleButtonVisible="False"
         IsSettingsVisible="False"
-        PaneDisplayMode="Left">
+        IsTitleBarAutoPaddingEnabled="False"
+        PaneDisplayMode="Auto">
         <NavigationView.MenuItems>
             <NavigationViewItem
                 x:Name="CatalogItem"
                 Content="{l:Loc Key=nav.catalog}"
-                Icon="Library"
-                Tapped="OnCatalogTapped" />
+                Tapped="OnCatalogTapped">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE7B8;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
         </NavigationView.MenuItems>
         <NavigationView.FooterMenuItems>
-            <!-- La guía se conecta en la Fase 4. -->
-            <NavigationViewItem
-                Content="{l:Loc Key=nav.guide}"
-                Icon="Help"
-                SelectsOnInvoked="False" />
+            <!-- La guía se conecta en la fase del tour. -->
+            <NavigationViewItem Content="{l:Loc Key=nav.guide}" SelectsOnInvoked="False">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE7BE;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
         </NavigationView.FooterMenuItems>
 
         <Frame x:Name="ContentFrame" Navigated="OnNavigated" />
