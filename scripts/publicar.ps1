@@ -53,8 +53,10 @@ SHA-256 (``$($zip.Name)``): ``$sha``
 $notesFile = Join-Path $env:TEMP "anchorps5-notas-$version.md"
 [IO.File]::WriteAllText($notesFile, $notes, (New-Object Text.UTF8Encoding $false))
 
-$prerelease = if ($version -match '-') { @("--prerelease") } else { @() }
-& gh release create $tag $zip.FullName "$($zip.FullName).sha256" --repo Kuroge/AnchorPS5 --target main --title "AnchorPS5 $version" --notes-file $notesFile @prerelease
+$arguments = @("release", "create", $tag, $zip.FullName, "$($zip.FullName).sha256",
+    "--repo", "Kuroge/AnchorPS5", "--target", "main", "--title", "AnchorPS5 $version", "--notes-file", $notesFile)
+if ($version -match '-') { $arguments += "--prerelease" }
+& gh $arguments
 if ($LASTEXITCODE -ne 0) { throw "gh release create ha fallado" }
 Remove-Item $notesFile
 "Publicada · Published: https://github.com/Kuroge/AnchorPS5/releases/tag/$tag"
