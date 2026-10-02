@@ -120,6 +120,7 @@ Necesitas el [SDK de .NET 10](https://dotnet.microsoft.com/download) en Windows.
 dotnet build                      # compilar
 dotnet test                       # tests
 dotnet publish src/AnchorPS5.App -c Release -r win-x64 --self-contained
+.\scripts\empaquetar.ps1          # zip de release + .sha256 en dist\
 ```
 
 Está hecho con .NET 10 y WinUI 3 (Windows App SDK). El núcleo (`AnchorPS5.Core`) no

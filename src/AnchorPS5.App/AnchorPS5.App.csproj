@@ -6,7 +6,7 @@
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>AnchorPS5.App</RootNamespace>
-    <!-- Satélites de .NET solo en los idiomas de la app (las carpetas de idioma de Windows App SDK se recortan al empaquetar). -->
+    <!-- Satélites de .NET solo en los idiomas de la app (las carpetas de idioma de Windows App SDK no se tocan: traducen los textos internos de WinUI). -->
     <SatelliteResourceLanguages>en;es</SatelliteResourceLanguages>
     <AssemblyName>AnchorPS5</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -17,6 +17,9 @@
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- Sin esto, "dotnet publish" de una app sin empaquetar no copia AnchorPS5.pri (los
+         recursos compilados de la interfaz) y la app se cierra al arrancar. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>
