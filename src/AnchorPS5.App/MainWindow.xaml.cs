@@ -109,6 +109,15 @@ public sealed partial class MainWindow : Window
         var viewModel = new SetupViewModel(
             App.Localization, App.FirstRun, App.Config.Language, App.Config.DownloadPath, PickFolderAsync);
 
+        // Cambiar el idioma en el selector cambia la pantalla al momento.
+        viewModel.LanguageChanged += (_, _) => DispatcherQueue.TryEnqueue(() =>
+        {
+            UpdateTitle();
+            var translated = new FirstRunPage();
+            translated.ShowStep(new SetupPage(viewModel), 0);
+            ShowScreen(translated);
+        });
+
         viewModel.Completed += (_, _) =>
         {
             // Las pantallas siguientes se crean ya en el idioma elegido.
@@ -149,9 +158,9 @@ public sealed partial class MainWindow : Window
     {
         _shell = new ShellPage();
         // El botón atrás solo se ve cuando hay a dónde volver.
-        _shell.CanGoBackChanged += (_, canGoBack) => AppTitleBar.IsBackButtonVisible = canGoBack;
-        AppTitleBar.IsBackButtonVisible = false;
-        AppTitleBar.IsBackButtonEnabled = true;
+        _shell.HomeAvailableChanged += (_, available) =>
+            HomeButton.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
+        HomeButton.Visibility = Visibility.Collapsed;
         AppTitleBar.IsPaneToggleButtonVisible = true;
         // Descargas y cuenta de GitHub a la derecha del todo, pegados a los botones de la ventana.
         AppTitleBar.RightHeader = new StackPanel
@@ -176,7 +185,7 @@ public sealed partial class MainWindow : Window
         if (!ReferenceEquals(screen, _shell))
         {
             _shell = null;
-            AppTitleBar.IsBackButtonVisible = false;
+            HomeButton.Visibility = Visibility.Collapsed;
             AppTitleBar.IsPaneToggleButtonVisible = false;
             AppTitleBar.RightHeader = null;
         }
@@ -209,7 +218,7 @@ public sealed partial class MainWindow : Window
             _rightPaddingColumn.Width = new GridLength(width);
     }
 
-    private void OnTitleBarBackRequested(TitleBar sender, object args) => _shell?.GoBack();
+    private void OnHomeClick(object sender, RoutedEventArgs e) => _shell?.GoHome();
 
     private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) => _shell?.TogglePane();
 
@@ -222,7 +231,7 @@ public sealed partial class MainWindow : Window
 
     private async Task<string?> PickFolderAsync()
     {
-        var picker = new FolderPicker(AppWindow.Id);
+        var picker = new FolderPicker(AppWindow.Id) { SuggestedStartLocation = PickerLocationId.Downloads };
         var result = await picker.PickSingleFolderAsync();
         return result?.Path;
     }

@@ -67,14 +67,24 @@ public sealed partial class ShellPage : Page
     /// <summary>Indicador de descargas para la barra de título.</summary>
     public DownloadsIndicator DownloadsIndicator { get; }
 
-    /// <summary>Avisa a la barra de título de si hay a dónde volver.</summary>
-    public event EventHandler<bool>? CanGoBackChanged;
+    /// <summary>Avisa a la barra de título de si tiene sentido el botón Home (no se está ya en el catálogo).</summary>
+    public event EventHandler<bool>? HomeAvailableChanged;
 
-    public void GoBack()
+    /// <summary>En el catálogo completo, sin filtros de sección.</summary>
+    public bool IsHome => ContentFrame.CurrentSourcePageType == typeof(CatalogPage) && _catalog.Filter == CatalogFilter.All;
+
+    /// <summary>Botón Home: vuelve al catálogo completo desde cualquier pantalla.</summary>
+    public void GoHome()
     {
-        if (ContentFrame.CanGoBack)
-            ContentFrame.GoBack(new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
+        _catalog.Filter = CatalogFilter.All;
+        NavView.SelectedItem = CatalogItem;
+        if (ContentFrame.CurrentSourcePageType != typeof(CatalogPage))
+            ContentFrame.Navigate(typeof(CatalogPage), _catalog, new EntranceNavigationTransitionInfo());
+        ContentFrame.BackStack.Clear();
+        RaiseHomeAvailable();
     }
+
+    private void RaiseHomeAvailable() => HomeAvailableChanged?.Invoke(this, !IsHome);
 
     public void TogglePane() => NavView.IsPaneOpen = !NavView.IsPaneOpen;
 
@@ -97,8 +107,9 @@ public sealed partial class ShellPage : Page
         {
             ContentFrame.Navigate(typeof(CatalogPage), _catalog, new EntranceNavigationTransitionInfo());
             ContentFrame.BackStack.Clear();
-            CanGoBackChanged?.Invoke(this, false);
         }
+
+        RaiseHomeAvailable();
     }
 
     private void OnCatalogPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -200,7 +211,7 @@ public sealed partial class ShellPage : Page
 
     private void OnNavigated(object sender, NavigationEventArgs e)
     {
-        CanGoBackChanged?.Invoke(this, ContentFrame.CanGoBack);
+        RaiseHomeAvailable();
 
         // El menú marca la página que se ve (también al volver atrás desde "Acerca de").
         if (e.SourcePageType == typeof(AboutPage))

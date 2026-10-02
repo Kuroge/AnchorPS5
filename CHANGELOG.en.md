@@ -7,6 +7,15 @@ All notable changes to AnchorPS5. The format follows
 [SemVer](https://semver.org/). While the app is in **alpha**, things may change a lot
 between versions.
 
+## [Unreleased]
+
+### Changed
+
+- The title bar's Back button becomes **Home** (🏠): it goes back to the catalog from any
+  screen (About, an app page, another section) and only shows up when needed.
+- In the first-run setup, **changing the language translates the screen right away**.
+- **Browse…** (download folder) opens straight in the Downloads folder.
+
 ## [0.1.0-alpha.1] — 2026-10-02
 
 First test version.

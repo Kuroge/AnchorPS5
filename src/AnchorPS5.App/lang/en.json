@@ -5,6 +5,7 @@
   "app.tagline": "Your PS5 homebrew catalog.",
   "app.versionBy": "Version {0} · by {1}",
 
+  "nav.home": "Go to the catalog",
   "nav.catalog": "Catalog",
   "nav.downloaded": "Downloaded",
   "nav.updates": "Updates",
@@ -31,7 +32,7 @@
   "setup.title": "Initial setup",
   "setup.subtitle": "Choose the language and the folder where downloads will be saved. You can change this later by editing config/config.json.",
   "setup.language": "Language",
-  "setup.languageDescription": "Interface language. Applied when you continue.",
+  "setup.languageDescription": "Interface language.",
   "setup.downloadFolder": "Download folder",
   "setup.downloadFolderDescription": "The packages you download will be saved here.",
   "setup.browse": "Browse…",

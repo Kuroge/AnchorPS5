@@ -3,7 +3,8 @@
     x:Class="AnchorPS5.App.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:c="using:AnchorPS5.App.Controls">
+    xmlns:c="using:AnchorPS5.App.Controls"
+    xmlns:l="using:AnchorPS5.App.Localization">
 
     <!-- Mica Alt para toda la ventana -->
     <Window.SystemBackdrop>
@@ -14,7 +15,6 @@
         <!-- Barra de título de WinUI: atrás y menú se activan en la pantalla principal -->
         <TitleBar
             x:Name="AppTitleBar"
-            BackRequested="OnTitleBarBackRequested"
             IsBackButtonVisible="False"
             IsPaneToggleButtonVisible="False"
             PaneToggleRequested="OnTitleBarPaneToggleRequested">
@@ -24,12 +24,29 @@
                 <x:Double x:Key="TitleBarMinDragRegionWidth">0</x:Double>
             </TitleBar.Resources>
             <TitleBar.LeftHeader>
-                <c:AnchorMark
-                    Width="18"
-                    Height="18"
-                    Margin="4,0,0,0"
-                    Foreground="{ThemeResource AnchorBlueBrush}"
-                    RingBrush="{ThemeResource AnchorGoldBrush}" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <!-- Home: vuelve al catálogo desde cualquier pantalla (solo si no se está ya en él) -->
+                    <Button
+                        x:Name="HomeButton"
+                        Width="40"
+                        Height="32"
+                        Padding="0"
+                        AutomationProperties.Name="{l:Loc Key=nav.home}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="OnHomeClick"
+                        ToolTipService.ToolTip="{l:Loc Key=nav.home}"
+                        Visibility="Collapsed">
+                        <FontIcon FontSize="16" Glyph="&#xE80F;" />
+                    </Button>
+                    <c:AnchorMark
+                        Width="18"
+                        Height="18"
+                        Margin="4,0,0,0"
+                        VerticalAlignment="Center"
+                        Foreground="{ThemeResource AnchorBlueBrush}"
+                        RingBrush="{ThemeResource AnchorGoldBrush}" />
+                </StackPanel>
             </TitleBar.LeftHeader>
         </TitleBar>
 

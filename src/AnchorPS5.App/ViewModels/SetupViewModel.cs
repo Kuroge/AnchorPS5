@@ -31,6 +31,19 @@ public sealed partial class SetupViewModel : ObservableObject
         DownloadPath = currentDownloadPath;
     }
 
+    /// <summary>El usuario ha elegido otro idioma: ya está cargado y la vista se redibuja.</summary>
+    public event EventHandler? LanguageChanged;
+
+    partial void OnSelectedLanguageChanged(LanguageInfo? value)
+    {
+        if (value is null || string.Equals(value.Code, _localization.CurrentLanguage, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _localization.Load(value.Code);
+        ErrorMessage = string.Empty;
+        LanguageChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     /// <summary>Se lanza tras guardar la configuración correctamente.</summary>
     public event EventHandler? Completed;
 

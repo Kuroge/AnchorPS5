@@ -7,6 +7,15 @@ Todos los cambios importantes de AnchorPS5. El formato sigue
 [SemVer](https://semver.org/lang/es/). Mientras la app sea **alpha**, puede cambiar mucho
 de una versión a otra.
 
+## [Sin publicar]
+
+### Cambiado
+
+- El botón Atrás de la barra superior pasa a ser **Inicio** (🏠): vuelve al catálogo desde
+  cualquier pantalla (Acerca de, una ficha, otra sección) y solo aparece cuando hace falta.
+- En la configuración inicial, **cambiar el idioma traduce la pantalla al momento**.
+- **Examinar…** (carpeta de descargas) abre directamente en la carpeta Descargas.
+
 ## [0.1.0-alpha.1] — 2026-10-02
 
 Primera versión de prueba.
