@@ -17,7 +17,8 @@ $version = (& dotnet msbuild $project -getProperty:Version -p:Configuration=Rele
 $tag = "v$version"
 
 if (git -C $root status --porcelain) { throw "Hay cambios sin commit: haz commit y push antes de publicar." }
-if (& gh release view $tag --repo Kuroge/AnchorPS5 2>$null) { throw "La release $tag ya existe." }
+$existing = & gh release list --repo Kuroge/AnchorPS5 --limit 200 --json tagName -q ".[].tagName"
+if ($existing -contains $tag) { throw "La release $tag ya existe." }
 
 function Get-Section([string]$file) {
     $text = [IO.File]::ReadAllText((Join-Path $root $file))
