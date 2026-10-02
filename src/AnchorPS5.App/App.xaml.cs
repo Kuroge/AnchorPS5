@@ -37,7 +37,12 @@ public partial class App : Application
 
     public static SourceLoader SourceLoader { get; } = new(Http, Paths.ConfigDirectory);
 
-    public static SeenAppsService SeenApps { get; } = new(Paths);
+    /// <summary>config\state.json: apps ya vistas y canal (estable/beta) de cada fichero.</summary>
+    public static AppStateStore State { get; } = new(Paths);
+
+    public static SeenAppsService SeenApps { get; } = new(State);
+
+    public static ChannelPreferences Channels { get; } = new(State);
 
     /// <summary>API de GitHub con caché en config\cache\github (las respuestas sin cambios no gastan cupo).</summary>
     public static GitHubClient GitHub { get; } = new(Http, Path.Combine(Paths.ConfigDirectory, "cache", "github"));

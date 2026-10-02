@@ -12,6 +12,7 @@ public sealed partial class AppDetailPage : Page
 {
     private const string DownloadGlyph = "\uE896";
     private const string WarningGlyph = "\uE7BA";
+    private const string CheckGlyph = "\uE73E";
 
     public AppDetailPage()
     {
@@ -26,7 +27,10 @@ public sealed partial class AppDetailPage : Page
         Bindings.Update();
     }
 
-    /// <summary>Menú "Descargar ▾": una opción por fichero publicado (PS4 y beta indicados).</summary>
+    /// <summary>
+    /// Menú "Descargar ▾": una opción por fichero. Lo que ya tienes en su última versión sale
+    /// deshabilitado ("✓ Ya lo tienes"), así nunca se vuelve a descargar.
+    /// </summary>
     private void OnDownloadMenuOpening(object? sender, object e)
     {
         DownloadMenu.Items.Clear();
@@ -35,14 +39,118 @@ public sealed partial class AppDetailPage : Page
             var option = new MenuFlyoutItem
             {
                 Text = file.MenuText,
-                Icon = new FontIcon { Glyph = file.IsBeta ? WarningGlyph : DownloadGlyph },
+                Icon = new FontIcon { Glyph = file.IsUpToDate ? CheckGlyph : file.IsBeta ? WarningGlyph : DownloadGlyph },
+                IsEnabled = !file.IsUpToDate && !file.IsBusy,
             };
-            if (file.IsBeta && Application.Current.Resources.TryGetValue("BetaBrush", out var beta))
+            if (file.IsBeta && !file.IsUpToDate && Application.Current.Resources.TryGetValue("BetaBrush", out var beta))
                 option.Foreground = (Brush)beta;
             ToolTipService.SetToolTip(option, file.HasDescription ? file.Description : file.FileName);
-            option.Click += (_, _) => Item.DownloadFile(file);
+            option.Click += (_, _) => DownloadWithWarningAsync(file);
             DownloadMenu.Items.Add(option);
         }
+    }
+
+    // ---- Descargar y betas ----
+
+    private void OnFileDownloadClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is PackageFileViewModel file)
+            DownloadWithWarningAsync(file);
+    }
+
+    /// <summary>Descargar una beta por primera vez (fichero solo-beta) pide confirmación.</summary>
+    private async void DownloadWithWarningAsync(PackageFileViewModel file)
+    {
+        if (file.NeedsBetaWarning && !await ConfirmBetaAsync(file, file.File?.Version ?? string.Empty))
+            return;
+        file.Download();
+    }
+
+    private async void OnTryBetaClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is PackageFileViewModel file && await ConfirmBetaAsync(file, file.BetaVersion))
+            file.TryBeta();
+    }
+
+    /// <summary>
+    /// Volver a la estable: si hay betas descargadas de ese fichero, pregunta si se borran o se
+    /// conservan, con un enlace para abrir su ubicación sin cerrar el aviso.
+    /// </summary>
+    private async void OnBackToStableClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not PackageFileViewModel file)
+            return;
+
+        var betas = file.BetaVersions;
+        if (betas.Count == 0)
+        {
+            file.BackToStable(deleteBeta: false);
+            return;
+        }
+
+        var versions = string.Join(", ", betas.Select(v => "v" + v.Version));
+        var content = new StackPanel { Spacing = 12 };
+        content.Children.Add(new TextBlock { Text = Loc("dialog.backToStableText", file.FileName, versions), TextWrapping = TextWrapping.Wrap });
+        var openLocation = new HyperlinkButton { Content = Loc("action.openBetaLocation"), Padding = new Thickness(0) };
+        openLocation.Click += (_, _) => Item.OpenBetaFolder(file);
+        content.Children.Add(openLocation);
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+            RequestedTheme = ActualTheme,
+            Title = Loc("dialog.backToStableTitle"),
+            Content = content,
+            PrimaryButtonText = Loc("action.deleteBeta"),
+            SecondaryButtonText = Loc("action.keepBeta"),
+            CloseButtonText = Loc("action.cancel"),
+            DefaultButton = ContentDialogButton.Close,
+        };
+
+        switch (await dialog.ShowAsync())
+        {
+            case ContentDialogResult.Primary:
+                file.BackToStable(deleteBeta: true);
+                break;
+            case ContentDialogResult.Secondary:
+                file.BackToStable(deleteBeta: false);
+                break;
+        }
+    }
+
+    /// <summary>Aviso de beta: alerta arriba y cómo volver a la estable.</summary>
+    private async Task<bool> ConfirmBetaAsync(PackageFileViewModel file, string version)
+    {
+        var content = new StackPanel { Spacing = 12 };
+        content.Children.Add(new InfoBar
+        {
+            IsOpen = true,
+            IsClosable = false,
+            Severity = InfoBarSeverity.Warning,
+            Title = Loc("dialog.betaWarningTitle"),
+            Message = Loc("dialog.betaWarning"),
+        });
+        var alreadyDownloaded = file.BetaDownloaded && version == file.BetaVersion;
+        content.Children.Add(new TextBlock
+        {
+            Text = Loc(alreadyDownloaded ? "dialog.betaTextDownloaded" : "dialog.betaText", version, file.FileName),
+            TextWrapping = TextWrapping.Wrap,
+        });
+        content.Children.Add(new TextBlock { Text = Loc("dialog.betaHowToReturn"), TextWrapping = TextWrapping.Wrap });
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+            RequestedTheme = ActualTheme,
+            Title = Loc(alreadyDownloaded ? "dialog.useBetaTitle" : "dialog.betaTitle", version),
+            Content = content,
+            PrimaryButtonText = Loc(alreadyDownloaded ? "action.useBeta" : "action.tryBeta"),
+            CloseButtonText = Loc("action.cancel"),
+            DefaultButton = ContentDialogButton.Close,
+        };
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 
     // ---- Borrar ----

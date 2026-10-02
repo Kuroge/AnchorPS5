@@ -52,6 +52,18 @@ public static partial class AssetClassifier
         return name.Trim('-', '_', '.', ' ');
     }
 
+    /// <summary>
+    /// Clave sin marcas de canal ("app-beta.elf", "app_nightly.zip" → "app.elf", "app.zip"),
+    /// para emparejar una beta con nombre distinto con su fichero estable.
+    /// </summary>
+    public static string WithoutChannelMarkers(string key)
+    {
+        var name = ChannelMarker().Replace(key, string.Empty);
+        name = SeparatorRuns().Replace(name, m => m.Value[..1]);
+        name = SeparatorBeforeDot().Replace(name, ".");
+        return name.Trim('-', '_', '.', ' ');
+    }
+
     /// <summary>Regla del catálogo que aplica a un fichero (la primera que encaje).</summary>
     public static AssetRule? FindRule(IEnumerable<AssetRule> rules, string fileName) =>
         rules.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.Match) && GlobToRegex(r.Match).IsMatch(fileName));
@@ -64,6 +76,9 @@ public static partial class AssetClassifier
 
     [GeneratedRegex(@"[-_ ]?v?\d+(?:\.\d+)+(?:[-_.]?(?:alpha|beta|rc|pre|preview)[-_.]?\d*)?")]
     private static partial Regex VersionPattern();
+
+    [GeneratedRegex(@"[-_ .](beta|alpha|rc\d*|pre|preview|nightly|dev|test)(?=[-_ .]|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex ChannelMarker();
 
     [GeneratedRegex(@"[-_ ]{2,}")]
     private static partial Regex SeparatorRuns();

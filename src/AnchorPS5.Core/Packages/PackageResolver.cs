@@ -53,7 +53,18 @@ public sealed class PackageResolver
         if (stable is not null)
             files.AddRange(FilesOf(app, stable));
         if (beta is not null)
-            files.AddRange(FilesOf(app, beta));
+        {
+            // Una beta con otro nombre ("app-beta.elf") se empareja con su estable ("app.elf")
+            // quitando marcas de canal; si no casa con ninguna, queda como fichero solo-beta.
+            var stableKeys = files.Select(f => f.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var file in FilesOf(app, beta))
+            {
+                var key = file.Key;
+                if (!stableKeys.Contains(key) && AssetClassifier.WithoutChannelMarkers(key) is var plain && stableKeys.Contains(plain))
+                    key = plain;
+                files.Add(file with { Key = key });
+            }
+        }
 
         var releaseUrl = Uri.TryCreate((stable ?? beta)?.HtmlUrl, UriKind.Absolute, out var url) ? url : null;
         return new ResolvedPackage(files, stable?.Version, beta?.Version, releaseUrl, source);

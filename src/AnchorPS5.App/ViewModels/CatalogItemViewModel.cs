@@ -15,13 +15,18 @@ namespace AnchorPS5.App.ViewModels;
 /// <summary>Acciones sobre los paquetes (las implementa el catálogo).</summary>
 public interface IPackageActions
 {
-    void Download(CatalogItemViewModel item, PackageFileViewModel file);
+    /// <summary>Descarga un fichero concreto (nunca uno que ya tengas en esa versión).</summary>
+    void Download(CatalogItemViewModel item, PackageFileViewModel row, PackageFile file);
+
+    /// <summary>Cambia el canal de un fichero (estable/beta) y vuelve a calcular su estado.</summary>
+    void SetChannel(CatalogItemViewModel item, PackageFileViewModel row, FileChannel channel);
+
     void OpenFolder(string path);
     void DeleteVersions(CatalogItemViewModel item, IReadOnlyList<InstalledVersion> versions);
 }
 
 /// <summary>Tarjeta y detalle de una app del catálogo, con sus ficheros y su estado en la biblioteca.</summary>
-public sealed partial class CatalogItemViewModel : ObservableObject
+public sealed partial class CatalogItemViewModel : ObservableObject, IFileActions
 {
     private readonly LocalizationService _localization;
     private readonly IPackageActions _actions;
@@ -139,13 +144,13 @@ public sealed partial class CatalogItemViewModel : ObservableObject
     public bool ShowDownloadButton => IsNotDownloaded && HasSingleFile && !IsAllUpToDate;
     public bool ShowDownloadMenu => HasManyFiles && !IsAllUpToDate;
 
-    /// <summary>Tienes todos los ficheros publicados (estables) en su última versión.</summary>
+    /// <summary>Tienes todos los ficheros publicados en su última versión (los solo-beta no cuentan).</summary>
     public bool IsAllUpToDate
     {
         get
         {
-            var stable = Files.Where(f => f.CanDownload && !f.IsBeta).ToList();
-            return stable.Count > 0 && stable.All(f => f.IsUpToDate);
+            var files = Files.Where(f => f.CanDownload && !f.IsBetaOnly).ToList();
+            return files.Count > 0 && files.All(f => f.IsUpToDate);
         }
     }
     public bool ShowUpdateButton => HasUpdate;
@@ -168,26 +173,25 @@ public sealed partial class CatalogItemViewModel : ObservableObject
     [RelayCommand]
     private void Download()
     {
-        if (DownloadableFiles.FirstOrDefault() is { } file)
+        if (DownloadableFiles.FirstOrDefault(f => !f.IsUpToDate) is { } file)
             DownloadFile(file);
     }
 
-    /// <summary>Descarga la última versión de cada fichero que tienes desactualizado.</summary>
+    /// <summary>Descarga la última versión (en su canal) de cada fichero desactualizado.</summary>
     [RelayCommand]
     private void UpdateAll()
     {
-        foreach (var file in Files.Where(f => f.HasUpdate && f.Status.CountsForUpdate).ToList())
+        foreach (var file in Files.Where(f => f.HasUpdate).ToList())
             DownloadFile(file);
     }
 
-    public void DownloadFile(PackageFileViewModel file)
-    {
-        ActionError = string.Empty;
-        _actions.Download(this, file);
-    }
+    public void DownloadFile(PackageFileViewModel file) => ((IFileActions)this).Download(file);
 
     [RelayCommand]
     private void OpenFolder() => _actions.OpenFolder(AppFolder);
+
+    /// <summary>Abre la carpeta de la beta de un fichero (desde el aviso de volver a la estable).</summary>
+    public void OpenBetaFolder(PackageFileViewModel file) => _actions.OpenFolder(file.BetaFolderPath);
 
     /// <summary>Borra versiones (ya confirmado por la vista).</summary>
     public void DeleteVersions(IReadOnlyList<InstalledVersion> versions)
@@ -195,6 +199,38 @@ public sealed partial class CatalogItemViewModel : ObservableObject
         if (versions.Count > 0)
             _actions.DeleteVersions(this, versions);
     }
+
+    // ---- Acciones de las fichas ----
+
+    void IFileActions.Download(PackageFileViewModel file)
+    {
+        if (file.File is null || file.IsUpToDate)
+            return;
+        ActionError = string.Empty;
+        _actions.Download(this, file, file.File);
+    }
+
+    void IFileActions.TryBeta(PackageFileViewModel file)
+    {
+        if (file.Status.Beta is not { } beta)
+            return;
+        ActionError = string.Empty;
+        _actions.SetChannel(this, file, FileChannel.Beta);
+        _actions.Download(this, file, beta);
+    }
+
+    void IFileActions.BackToStable(PackageFileViewModel file, bool deleteBeta)
+    {
+        ActionError = string.Empty;
+        var betas = file.BetaVersions;
+        _actions.SetChannel(this, file, FileChannel.Stable);
+        if (deleteBeta && betas.Count > 0)
+            _actions.DeleteVersions(this, betas);
+    }
+
+    void IFileActions.OpenFolder(string path) => _actions.OpenFolder(path);
+
+    void IFileActions.Delete(IReadOnlyList<InstalledVersion> versions) => DeleteVersions(versions);
 
     public void SetStatus(PackageStatus status)
     {
@@ -204,8 +240,8 @@ public sealed partial class CatalogItemViewModel : ObservableObject
         var jobs = Files.Where(f => f.ActiveJob is not null).ToDictionary(f => (f.Key, f.File?.Version), f => f.ActiveJob);
         Files.Clear();
         foreach (var fileStatus in status.Files
-            .OrderBy(f => f.Available is null ? 1 : 0)
-            .ThenBy(f => f.Available?.IsPrerelease == true ? 1 : 0)
+            .OrderBy(f => f.Target is null ? 1 : 0)
+            .ThenBy(f => f.IsBetaOnly ? 1 : 0)
             .ThenBy(f => AssetClassifier.DetectPlatform(f.Available?.FileName ?? f.Key) == ConsolePlatform.PS4 ? 1 : 0)
             .ThenBy(f => f.Available?.Order ?? int.MaxValue)
             .ThenBy(f => f.Key, StringComparer.OrdinalIgnoreCase))
@@ -213,16 +249,10 @@ public sealed partial class CatalogItemViewModel : ObservableObject
             var versionsOfFile = status.Versions
                 .Where(v => v.Files.Any(f => string.Equals(f.Key, fileStatus.Key, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
-            var row = new PackageFileViewModel(
-                fileStatus,
-                versionsOfFile,
-                _fileFolder(fileStatus.Key),
-                _localization,
-                DownloadFile,
-                _actions.OpenFolder,
-                DeleteVersions);
-            if (jobs.TryGetValue((row.Key, row.File?.Version), out var job))
-                row.ActiveJob = job;
+            var row = new PackageFileViewModel(fileStatus, versionsOfFile, _fileFolder(fileStatus.Key), _localization, this);
+
+            // La descarga en curso de ese fichero (estable o beta) sigue enlazada.
+            row.ActiveJob = jobs.FirstOrDefault(j => string.Equals(j.Key.Key, row.Key, StringComparison.OrdinalIgnoreCase)).Value;
             Files.Add(row);
         }
 

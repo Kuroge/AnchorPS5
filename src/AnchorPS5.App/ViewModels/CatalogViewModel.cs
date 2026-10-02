@@ -18,6 +18,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
     private readonly LocalizationService _localization;
     private readonly LibraryService _library;
     private readonly SeenAppsService _seenApps;
+    private readonly ChannelPreferences _channels;
     private readonly DownloadsViewModel _downloads;
     private readonly PackageResolver _resolver;
 
@@ -31,6 +32,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         LocalizationService localization,
         LibraryService library,
         SeenAppsService seenApps,
+        ChannelPreferences channels,
         DownloadsViewModel downloads,
         PackageResolver resolver)
     {
@@ -40,6 +42,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         _localization = localization;
         _library = library;
         _seenApps = seenApps;
+        _channels = channels;
         _downloads = downloads;
         _downloads.JobFinished += OnJobFinished;
         Title = localization.Get("nav.catalog");
@@ -151,6 +154,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         var packages = await Task.WhenAll(result.Entries.Select(e => _resolver.ResolveAsync(e.App)));
         var library = await scanLibrary;
         _newIds.UnionWith(await Task.Run(() => _seenApps.RegisterAndGetNew(result.Entries.Select(e => e.App.Id))));
+        var appChannels = await Task.Run(() => result.Entries.Select(e => _channels.GetForApp(e.App.Id)).ToArray());
         IsLoading = false;
 
         _all = result.Entries
@@ -159,7 +163,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
                 packages[i],
                 _localization,
                 this,
-                PackageStatus.Compute(packages[i], library.GetVersions(e.App)),
+                PackageStatus.Compute(packages[i], library.GetVersions(e.App), appChannels[i]),
                 _newIds.Contains(e.App.Id),
                 _library.GetAppFolder(e.App),
                 key => _library.GetFileFolder(e.App, key)))
@@ -211,12 +215,26 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
 
     // ---- Acciones sobre paquetes ----
 
-    public void Download(CatalogItemViewModel item, PackageFileViewModel file)
+    public void Download(CatalogItemViewModel item, PackageFileViewModel row, PackageFile file)
     {
-        if (file.File is null)
+        // Red de seguridad: nunca se vuelve a descargar un fichero en una versión que ya tienes.
+        var alreadyHave = row.InstalledVersions.Any(v =>
+            string.Equals(v.Version, file.Version, StringComparison.OrdinalIgnoreCase)
+            && v.Files.Any(f => string.Equals(f.Key, file.Key, StringComparison.OrdinalIgnoreCase)));
+        if (alreadyHave)
+        {
+            _ = RefreshItemAsync(item); // por si el canal ha cambiado
             return;
-        file.ActiveJob = _downloads.Start(item.Entry.App, file.File);
+        }
+
+        row.ActiveJob = _downloads.Start(item.Entry.App, file);
         item.RefreshActiveJob();
+    }
+
+    public async void SetChannel(CatalogItemViewModel item, PackageFileViewModel row, FileChannel channel)
+    {
+        await Task.Run(() => _channels.Set(item.Id, row.Key, channel));
+        await RefreshItemAsync(item);
     }
 
     public void OpenFolder(string path)
@@ -279,7 +297,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
     private async Task RefreshItemAsync(CatalogItemViewModel item)
     {
         var library = await Task.Run(_library.Scan);
-        item.SetStatus(PackageStatus.Compute(item.Package, library.GetVersions(item.Entry.App)));
+        item.SetStatus(PackageStatus.Compute(item.Package, library.GetVersions(item.Entry.App), _channels.GetForApp(item.Id)));
         UpdateCounts();
 
         // En "Descargadas" o "Actualizaciones" la app puede entrar o salir de la sección.

@@ -31,6 +31,7 @@ public sealed partial class ShellPage : Page
             App.Localization,
             library,
             App.SeenApps,
+            App.Channels,
             downloads,
             App.PackageResolver);
         _catalog.PropertyChanged += OnCatalogPropertyChanged;

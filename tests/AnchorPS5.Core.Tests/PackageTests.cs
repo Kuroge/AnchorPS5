@@ -227,17 +227,177 @@ public sealed class FileStatusTests
         Assert.Equal(PackageState.Downloaded, status.State);
     }
 
+    private static readonly ResolvedPackage StableAndBeta = new(
+        [File("app.elf", "1.0"), File("app.elf", "1.1-beta", pre: true)], "1.0", "1.1-beta", null, GitHubStatus.Ok);
+
     [Fact]
-    public void Beta_OnlyCountsAsUpdate_IfYouUseTheBeta()
+    public void OneCardPerFile_OnStable_BetaIsOffered_NotAnUpdate()
     {
-        var package = new ResolvedPackage([File("app.elf", "1.0"), File("app.elf", "1.1-beta", pre: true)], "1.0", "1.1-beta", null, GitHubStatus.Ok);
+        var status = PackageStatus.Compute(StableAndBeta, [Installed("1.0", ("app.elf", false))]);
 
-        var onStable = PackageStatus.Compute(package, [Installed("1.0", ("app.elf", false))]);
-        Assert.Equal(PackageState.Downloaded, onStable.State);
-        Assert.Contains(onStable.Files, f => f.State == FileState.UpdateAvailable && !f.CountsForUpdate);
+        var file = Assert.Single(status.Files);
+        Assert.Equal(FileChannel.Stable, file.Channel);
+        Assert.Equal(FileState.UpToDate, file.State);
+        Assert.True(file.BetaOffered);
+        Assert.Equal("1.1-beta", file.Beta!.Version);
+        Assert.Equal(PackageState.Downloaded, status.State);
+    }
 
-        var onBeta = PackageStatus.Compute(package, [Installed("1.1-alpha", ("app.elf", true))]);
-        Assert.Equal(PackageState.UpdateAvailable, onBeta.State);
+    [Fact]
+    public void NotDownloaded_OnStable_OffersStableAndBeta()
+    {
+        var file = Assert.Single(PackageStatus.Compute(StableAndBeta, []).Files);
+
+        Assert.Equal(FileState.NotDownloaded, file.State);
+        Assert.Equal("1.0", file.Target!.Version);
+        Assert.True(file.BetaOffered);
+    }
+
+    [Fact]
+    public void OnBeta_UpdatesFollowTheBeta()
+    {
+        var status = PackageStatus.Compute(StableAndBeta, [Installed("1.1-alpha", ("app.elf", true))]);
+
+        var file = Assert.Single(status.Files);
+        Assert.Equal(FileChannel.Beta, file.Channel);
+        Assert.Equal(FileState.UpdateAvailable, file.State);
+        Assert.Equal("1.1-beta", file.Target!.Version);
+        Assert.False(file.BetaOffered);
+        Assert.True(file.CanReturnToStable);
+        Assert.Equal(PackageState.UpdateAvailable, status.State);
+    }
+
+    [Fact]
+    public void OnBeta_AtLatestBeta_IsUpToDate()
+    {
+        var file = Assert.Single(PackageStatus.Compute(StableAndBeta, [Installed("1.1-beta", ("app.elf", true))]).Files);
+
+        Assert.Equal(FileState.UpToDate, file.State);
+    }
+
+    [Fact]
+    public void OnBeta_NewerStable_IsAnUpdate()
+    {
+        var package = new ResolvedPackage([File("app.elf", "1.2")], "1.2", null, null, GitHubStatus.Ok);
+
+        var file = Assert.Single(PackageStatus.Compute(package, [Installed("1.1-beta", ("app.elf", true))]).Files);
+
+        Assert.Equal(FileChannel.Beta, file.Channel);
+        Assert.Equal(FileState.UpdateAvailable, file.State);
+        Assert.Equal("1.2", file.Target!.Version);
+    }
+
+    [Fact]
+    public void BackToStable_IgnoresTheNewerBeta()
+    {
+        // Tienes la estable 1.0 y la beta 1.1; has elegido volver a estable.
+        var versions = new[] { Installed("1.1-beta", ("app.elf", true)), Installed("1.0", ("app.elf", false)) };
+        var channels = new Dictionary<string, FileChannel> { ["app.elf"] = FileChannel.Stable };
+
+        var file = Assert.Single(PackageStatus.Compute(StableAndBeta, versions, channels).Files);
+
+        Assert.Equal(FileChannel.Stable, file.Channel);
+        Assert.Equal(FileState.UpToDate, file.State);
+        Assert.Equal("1.0", file.Installed!.Version.Version);
+
+        // Se puede volver a la beta, que ya está descargada (sin descargar nada).
+        Assert.True(file.BetaOffered);
+        Assert.True(file.BetaDownloaded);
+    }
+
+    [Fact]
+    public void OnStable_BetaNotDownloaded_IsOfferedForDownload()
+    {
+        var file = Assert.Single(PackageStatus.Compute(StableAndBeta, [Installed("1.0", ("app.elf", false))]).Files);
+
+        Assert.True(file.BetaOffered);
+        Assert.False(file.BetaDownloaded);
+    }
+
+    [Fact]
+    public void BackToStable_WithoutStableDownloaded_OffersStable()
+    {
+        var channels = new Dictionary<string, FileChannel> { ["app.elf"] = FileChannel.Stable };
+
+        var file = Assert.Single(PackageStatus.Compute(StableAndBeta, [Installed("1.1-beta", ("app.elf", true))], channels).Files);
+
+        Assert.Equal(FileState.NotDownloaded, file.State);
+        Assert.Equal("1.0", file.Target!.Version);
+    }
+
+    [Fact]
+    public void BetaOnlyFile_IsInBetaChannel()
+    {
+        var package = new ResolvedPackage([File("app.elf", "1.0"), File("extra.elf", "1.1-beta", pre: true)], "1.0", "1.1-beta", null, GitHubStatus.Ok);
+
+        var extra = PackageStatus.Compute(package, []).Files.Single(f => f.Key == "extra.elf");
+
+        Assert.True(extra.IsBetaOnly);
+        Assert.Equal(FileChannel.Beta, extra.Channel);
+        Assert.Equal(FileState.NotDownloaded, extra.State);
+    }
+}
+
+public sealed class BetaMatchingTests
+{
+    private static GitHubRelease Release(string tag, bool pre, int day, params string[] assets) => new()
+    {
+        TagName = tag,
+        Prerelease = pre,
+        PublishedAt = new DateTimeOffset(2026, 9, day, 0, 0, 0, TimeSpan.Zero),
+        Assets = assets.Select(a => new GitHubAsset { Name = a, Size = 1, BrowserDownloadUrl = "https://x/" + a }).ToList(),
+    };
+
+    [Theory]
+    [InlineData("app-beta.elf", "app.elf")]
+    [InlineData("app_nightly.zip", "app.zip")]
+    [InlineData("app-rc2.elf", "app.elf")]
+    [InlineData("App-Preview-ps5.elf", "app-ps5.elf")]
+    [InlineData("devtools.elf", "devtools.elf")]
+    public void ChannelMarkers_AreRemoved(string key, string expected) =>
+        Assert.Equal(expected, AssetClassifier.WithoutChannelMarkers(key.ToLowerInvariant()));
+
+    [Fact]
+    public void BetaWithDifferentName_IsTheSameFile_UnlessNothingMatches()
+    {
+        var app = new HomebrewApp { Id = "a", Repo = "o/r" };
+
+        var package = PackageResolver.FromReleases(app,
+        [
+            Release("v1.0", false, 1, "app.elf"),
+            Release("v1.1", true, 5, "app-beta.elf", "tool-nightly.elf"),
+        ], GitHubStatus.Ok);
+
+        var beta = package.Files.Where(f => f.IsPrerelease).ToList();
+        Assert.Equal("app.elf", beta.Single(f => f.FileName == "app-beta.elf").Key);
+        Assert.Equal("tool-nightly.elf", beta.Single(f => f.FileName == "tool-nightly.elf").Key); // solo en beta
+    }
+}
+
+public sealed class ChannelPreferencesTests : IDisposable
+{
+    private readonly AppPaths _paths = new(Path.Combine(Path.GetTempPath(), "AnchorPS5Tests", Guid.NewGuid().ToString("N")));
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_paths.BaseDirectory))
+            Directory.Delete(_paths.BaseDirectory, recursive: true);
+    }
+
+    [Fact]
+    public void Channels_ArePerAppAndFile_AndCoexistWithSeenApps()
+    {
+        var store = new AppStateStore(_paths);
+        var channels = new ChannelPreferences(store);
+        var seen = new SeenAppsService(store);
+
+        seen.RegisterAndGetNew(["a", "b"]);
+        channels.Set("a", "app.elf", FileChannel.Beta);
+        channels.Set("b", "app.elf", FileChannel.Stable);
+
+        Assert.Equal(FileChannel.Beta, channels.GetForApp("a")["app.elf"]);
+        Assert.Equal(FileChannel.Stable, channels.GetForApp("b")["app.elf"]);
+        Assert.Empty(new SeenAppsService(new AppStateStore(_paths)).RegisterAndGetNew(["a", "b"]));
     }
 }
 

@@ -9,60 +9,80 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AnchorPS5.App.ViewModels;
 
+/// <summary>Lo que el usuario puede pedir sobre una ficha (lo resuelve el catálogo).</summary>
+public interface IFileActions
+{
+    void Download(PackageFileViewModel file);
+    void TryBeta(PackageFileViewModel file);
+
+    /// <summary>Vuelve al canal estable; si <paramref name="deleteBeta"/>, borra las betas descargadas de ese fichero.</summary>
+    void BackToStable(PackageFileViewModel file, bool deleteBeta);
+    void OpenFolder(string path);
+    void Delete(IReadOnlyList<InstalledVersion> versions);
+}
+
 /// <summary>
-/// Ficha de un fichero: lo publicado (o lo que tienes si ya no se publica), su estado
-/// propio y el histórico de versiones descargadas de ese fichero.
+/// Ficha de un fichero con sus dos canales (estable/beta): su estado en el canal en el que
+/// está el usuario, la beta disponible si la hay y el histórico de versiones descargadas.
 /// </summary>
 public sealed partial class PackageFileViewModel : ObservableObject
 {
-    private readonly Action<PackageFileViewModel> _download;
-    private readonly Action<string> _openFolder;
+    private readonly IFileActions _actions;
 
     public PackageFileViewModel(
         FileStatus status,
         IReadOnlyList<InstalledVersion> versions,
         string folderPath,
         LocalizationService localization,
-        Action<PackageFileViewModel> download,
-        Action<string> openFolder,
-        Action<IReadOnlyList<InstalledVersion>> delete)
+        IFileActions actions)
     {
         Status = status;
-        _download = download;
-        _openFolder = openFolder;
+        _actions = actions;
         FolderPath = folderPath;
         InstalledVersions = versions;
 
-        var file = status.Available;
-        var installedVersion = status.Installed?.Version.Version;
-        FileName = file?.FileName ?? status.Installed?.File.FileName ?? status.Key;
-        Label = file?.Label ?? FileName;
-        HasLabel = file?.Label is not null;
-        Description = file?.Description ?? string.Empty;
-        SizeText = file is { SizeBytes: > 0 } ? ByteSize.Format(file.SizeBytes) : string.Empty;
-        IsPs4 = (file?.Platform ?? AssetClassifier.DetectPlatform(FileName)) == ConsolePlatform.PS4;
-        IsBeta = file?.IsPrerelease ?? status.Installed?.File.IsPrerelease ?? false;
-        CanDownload = file is not null;
+        var shown = status.Available;
+        var installed = status.Installed;
+        FileName = shown?.FileName ?? installed?.File.FileName ?? status.Key;
+        Label = shown?.Label ?? FileName;
+        HasLabel = shown?.Label is not null;
+        Description = shown?.Description ?? string.Empty;
+        SizeText = status.Target is { SizeBytes: > 0 } t ? ByteSize.Format(t.SizeBytes) : string.Empty;
+        IsPs4 = AssetClassifier.DetectPlatform(FileName) == ConsolePlatform.PS4;
+        IsBeta = status.Channel == FileChannel.Beta;
 
-        StateText = status.State switch
+        var mine = installed?.Version.Version;
+        var target = status.Target?.Version;
+        StateText = (status.State, IsBeta) switch
         {
-            FileState.UpToDate => localization.Format("file.upToDate", installedVersion),
-            FileState.UpdateAvailable => localization.Format("file.update", installedVersion, file!.Version),
-            FileState.NoLongerPublished => localization.Format("file.noLongerPublished", installedVersion),
-            FileState.Unknown => localization.Format("file.installedOnly", installedVersion),
-            _ => localization.Format("file.available", file?.Version),
+            (FileState.UpToDate, false) => localization.Format("file.upToDate", mine),
+            (FileState.UpToDate, true) => localization.Format("file.betaUpToDate", mine),
+            (FileState.UpdateAvailable, false) => localization.Format("file.update", mine, target),
+            (FileState.UpdateAvailable, true) => localization.Format("file.betaUpdate", mine, target),
+            (FileState.NoLongerPublished, _) => localization.Format("file.noLongerPublished", mine),
+            (FileState.Unknown, _) => localization.Format("file.installedOnly", mine),
+            (_, true) when status.IsBetaOnly => localization.Format("file.betaOnlyAvailable", target),
+            _ => localization.Format("file.available", target),
         };
         DownloadText = localization.Get(status.State == FileState.UpdateAvailable ? "action.updateFile" : "action.download");
-        MenuText = string.Join("  ·  ", new[] { Label, IsPs4 ? "PS4" : null, IsBeta ? "beta" : null, SizeText }.Where(s => !string.IsNullOrEmpty(s)));
+        BetaOfferText = !status.BetaOffered ? string.Empty
+            : localization.Format(status.BetaDownloaded ? "file.betaOfferDownloaded" : "file.betaOffer", status.Beta!.Version);
+        TryBetaText = localization.Get(status.BetaDownloaded ? "action.useBeta" : "action.tryBeta");
+
+        var parts = new[] { Label, IsPs4 ? "PS4" : null, IsBeta ? "beta" : null, SizeText };
+        MenuText = string.Join("  ·  ", parts.Where(s => !string.IsNullOrEmpty(s)));
+        if (IsUpToDate)
+            MenuText += "  ·  " + localization.Get("file.alreadyHave");
 
         Versions = versions
-            .Select(v => new FileVersionViewModel(v, localization, () => openFolder(v.FolderPath), () => delete([v])))
+            .Select(v => new FileVersionViewModel(v, localization, () => actions.OpenFolder(v.FolderPath), () => actions.Delete([v])))
             .ToList();
     }
 
     public FileStatus Status { get; }
 
-    public PackageFile? File => Status.Available;
+    /// <summary>Lo que descargan "Descargar/Actualizar" en el canal actual.</summary>
+    public PackageFile? File => Status.Target;
 
     public string Key => Status.Key;
     public string Label { get; }
@@ -72,22 +92,39 @@ public sealed partial class PackageFileViewModel : ObservableObject
     public bool HasDescription => Description.Length > 0;
     public string SizeText { get; }
     public bool IsPs4 { get; }
+
+    /// <summary>El usuario está en el canal beta de este fichero (o solo existe en beta).</summary>
     public bool IsBeta { get; }
-    public bool CanDownload { get; }
+
+    public bool IsBetaOnly => Status.IsBetaOnly;
     public string StateText { get; }
     public string DownloadText { get; }
-
-    /// <summary>Texto del menú "Descargar ▾" (etiqueta · PS4 · beta · tamaño).</summary>
     public string MenuText { get; }
+
+    /// <summary>Se puede descargar algo en el canal actual.</summary>
+    public bool CanDownload => Status.Target is not null;
 
     public bool IsUpToDate => Status.State == FileState.UpToDate;
     public bool HasUpdate => Status.State == FileState.UpdateAvailable;
 
-    /// <summary>
-    /// Ficha resaltada en dorado: solo si la actualización cuenta (una beta cuando usas la
-    /// estable es opcional y no se resalta).
-    /// </summary>
-    public bool HighlightUpdate => HasUpdate && Status.CountsForUpdate;
+    /// <summary>Ficha resaltada en dorado: hay actualización en su canal.</summary>
+    public bool HighlightUpdate => HasUpdate;
+
+    /// <summary>Descargar este fichero sería bajar una beta por primera vez: pide confirmación.</summary>
+    public bool NeedsBetaWarning => IsBetaOnly && Status.State == FileState.NotDownloaded;
+
+    // ---- Canal beta ----
+
+    public bool HasBetaOffer => Status.BetaOffered;
+    public string BetaOfferText { get; }
+    public string BetaVersion => Status.Beta?.Version ?? string.Empty;
+
+    /// <summary>La beta ofrecida ya está descargada: pasar a ella no descarga nada.</summary>
+    public bool BetaDownloaded => Status.BetaDownloaded;
+
+    /// <summary>"Probar beta" (hay que descargarla) o "Usar la beta" (ya la tienes).</summary>
+    public string TryBetaText { get; }
+    public bool CanReturnToStable => Status.CanReturnToStable;
 
     // ---- Histórico de este fichero ----
 
@@ -108,8 +145,12 @@ public sealed partial class PackageFileViewModel : ObservableObject
     /// <summary>Muestra el botón de descargar/actualizar (no si ya está al día ni mientras descarga).</summary>
     public bool ShowDownloadButton => CanDownload && !IsUpToDate && !IsBusy;
 
+    public bool ShowTryBetaButton => HasBetaOffer && !IsBusy;
+
+    public bool ShowBackToStableButton => CanReturnToStable && !IsBusy;
+
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsBusy), nameof(HasJobError), nameof(ShowDownloadButton))]
+    [NotifyPropertyChangedFor(nameof(IsBusy), nameof(HasJobError), nameof(ShowDownloadButton), nameof(ShowTryBetaButton), nameof(ShowBackToStableButton))]
     public partial DownloadJobViewModel? ActiveJob { get; set; }
 
     public bool IsBusy => ActiveJob is { IsActive: true };
@@ -130,11 +171,26 @@ public sealed partial class PackageFileViewModel : ObservableObject
             OnPropertyChanged(nameof(IsBusy));
             OnPropertyChanged(nameof(HasJobError));
             OnPropertyChanged(nameof(ShowDownloadButton));
+            OnPropertyChanged(nameof(ShowTryBetaButton));
+            OnPropertyChanged(nameof(ShowBackToStableButton));
         }
     }
 
-    [RelayCommand]
-    private void Download() => _download(this);
+    /// <summary>Descarga lo del canal actual (la vista confirma antes si es una beta nueva).</summary>
+    public void Download() => _actions.Download(this);
+
+    /// <summary>Pasa a la beta y la descarga (la vista ya ha mostrado el aviso).</summary>
+    public void TryBeta() => _actions.TryBeta(this);
+
+    /// <summary>Vuelve a la estable (la vista ya ha preguntado qué hacer con las betas).</summary>
+    public void BackToStable(bool deleteBeta) => _actions.BackToStable(this, deleteBeta);
+
+    /// <summary>Versiones beta descargadas de este fichero, de la más nueva a la más antigua.</summary>
+    public IReadOnlyList<InstalledVersion> BetaVersions =>
+        InstalledVersions.Where(v => v.Files.Any(f => f.IsPrerelease)).ToList();
+
+    /// <summary>Carpeta a abrir desde el aviso: la de la beta si solo hay una, si no la del fichero.</summary>
+    public string BetaFolderPath => BetaVersions is [var only] ? only.FolderPath : FolderPath;
 
     [RelayCommand]
     private void Cancel() => ActiveJob?.Job.Cancel();
@@ -143,7 +199,7 @@ public sealed partial class PackageFileViewModel : ObservableObject
     private void Retry() => ActiveJob?.RetryCommand.Execute(null);
 
     [RelayCommand]
-    private void OpenFolder() => _openFolder(FolderPath);
+    private void OpenFolder() => _actions.OpenFolder(FolderPath);
 }
 
 /// <summary>Una versión descargada de un fichero, dentro de su histórico.</summary>

@@ -310,6 +310,32 @@
                                                 <Run Text="{x:Bind SizeText}" />
                                             </TextBlock>
 
+                                            <!-- Estás en estable y hay una beta más nueva -->
+                                            <StackPanel
+                                                Margin="0,6,0,0"
+                                                Orientation="Horizontal"
+                                                Spacing="8"
+                                                Visibility="{x:Bind HasBetaOffer}">
+                                                <FontIcon
+                                                    VerticalAlignment="Center"
+                                                    FontSize="13"
+                                                    Foreground="{ThemeResource BetaBrush}"
+                                                    Glyph="&#xE7BA;" />
+                                                <TextBlock
+                                                    VerticalAlignment="Center"
+                                                    Foreground="{ThemeResource BetaBrush}"
+                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                    Text="{x:Bind BetaOfferText}" />
+                                                <HyperlinkButton
+                                                    Padding="4,0"
+                                                    AutomationProperties.Name="{x:Bind TryBetaText}"
+                                                    Click="OnTryBetaClick"
+                                                    Content="{x:Bind TryBetaText}"
+                                                    Foreground="{ThemeResource BetaBrush}"
+                                                    Tag="{x:Bind}"
+                                                    Visibility="{x:Bind ShowTryBetaButton, Mode=OneWay}" />
+                                            </StackPanel>
+
                                             <!-- Progreso de este fichero -->
                                             <StackPanel
                                                 Margin="0,6,0,0"
@@ -363,9 +389,17 @@
                                             </Button>
                                             <Button
                                                 Margin="4,0,0,0"
+                                                AutomationProperties.Name="{l:Loc Key=action.backToStable}"
+                                                Click="OnBackToStableClick"
+                                                Tag="{x:Bind}"
+                                                Content="{l:Loc Key=action.backToStable}"
+                                                Visibility="{x:Bind ShowBackToStableButton, Mode=OneWay}" />
+                                            <Button
+                                                Margin="4,0,0,0"
                                                 AutomationProperties.Name="{x:Bind DownloadText}"
-                                                Command="{x:Bind DownloadCommand}"
+                                                Click="OnFileDownloadClick"
                                                 Content="{x:Bind DownloadText}"
+                                                Tag="{x:Bind}"
                                                 Visibility="{x:Bind ShowDownloadButton, Mode=OneWay}" />
                                             <Button
                                                 AutomationProperties.Name="{l:Loc Key=action.cancel}"
@@ -407,11 +441,20 @@
                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                         <StackPanel Orientation="Horizontal" Spacing="6">
                                                             <TextBlock Style="{StaticResource CaptionSecondaryTextStyle}" Text="{x:Bind Detail}" />
-                                                            <FontIcon
-                                                                FontSize="12"
-                                                                Foreground="{ThemeResource BetaBrush}"
-                                                                Glyph="&#xE7BA;"
-                                                                Visibility="{x:Bind IsBeta}" />
+                                                            <StackPanel
+                                                                Orientation="Horizontal"
+                                                                Spacing="4"
+                                                                Visibility="{x:Bind IsBeta}">
+                                                                <FontIcon
+                                                                    FontSize="12"
+                                                                    Foreground="{ThemeResource BetaBrush}"
+                                                                    Glyph="&#xE7BA;" />
+                                                                <TextBlock
+                                                                    FontWeight="SemiBold"
+                                                                    Foreground="{ThemeResource BetaBrush}"
+                                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                                    Text="{l:Loc Key=file.beta}" />
+                                                            </StackPanel>
                                                         </StackPanel>
                                                         <TextBlock
                                                             Foreground="{ThemeResource TextFillColorTertiaryBrush}"
