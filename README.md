@@ -110,6 +110,7 @@ depende de la interfaz y tiene sus propios tests.
   paquetes. Su licencia está en `tools\7zip\License.txt`.
 - [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) y
   [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) (licencia MIT).
+- **Huertas34**, de [elotrolado.net](https://www.elotrolado.net), por la sugerencia inicial del catálogo.
 - Gracias a los autores del homebrew del catálogo: AnchorPS5 solo enlaza sus releases.
 
 ## Licencia

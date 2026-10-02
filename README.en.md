@@ -108,6 +108,7 @@ doesn't depend on the UI and has its own tests.
   packages. Its license is in `tools\7zip\License.txt`.
 - [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) and
   [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) (MIT license).
+- **Huertas34**, from [elotrolado.net](https://www.elotrolado.net), for the initial catalog suggestion.
 - Thanks to the authors of the homebrew in the catalog: AnchorPS5 only links to their
   releases.
 
