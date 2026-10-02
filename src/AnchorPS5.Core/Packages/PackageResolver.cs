@@ -11,23 +11,50 @@ namespace AnchorPS5.Core.Packages;
 public sealed class PackageResolver
 {
     private readonly GitHubClient _github;
+    private readonly ReleaseIndex? _index;
+    private readonly Func<bool> _preferApi;
 
-    public PackageResolver(GitHubClient github)
+    /// <param name="index">Índice de releases del catálogo oficial (opcional): lo que esté en él no se pide a la API.</param>
+    /// <param name="preferApi">
+    /// Si devuelve true (p. ej. con sesión de GitHub: sin problema de límite y datos más al
+    /// día), se pregunta a la API y el índice solo se usa si la API no responde.
+    /// </param>
+    public PackageResolver(GitHubClient github, ReleaseIndex? index = null, Func<bool>? preferApi = null)
     {
         _github = github;
+        _index = index;
+        _preferApi = preferApi ?? (() => false);
     }
 
     /// <summary>Cuándo vuelve a estar disponible la API si se alcanzó el límite (hora de GitHub).</summary>
     public DateTimeOffset? LastRateLimitReset { get; private set; }
 
-    public async Task<ResolvedPackage> ResolveAsync(HomebrewApp app, CancellationToken cancellationToken = default)
+    /// <summary>Carga el índice de releases de las fuentes oficiales antes de resolver.</summary>
+    public Task LoadIndexAsync(IEnumerable<Source> sources, bool forceRefresh = false, CancellationToken cancellationToken = default) =>
+        _index?.LoadAsync(sources, forceRefresh, cancellationToken) ?? Task.CompletedTask;
+
+    /// <param name="forceRefresh">
+    /// Recarga manual: se pregunta a GitHub sin caché ni índice (para ver al momento una
+    /// release recién publicada); el índice queda de respaldo si GitHub no responde.
+    /// </param>
+    public async Task<ResolvedPackage> ResolveAsync(HomebrewApp app, bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
         if (!GitHubRepoRef.TryParse(app.Repo, out var repo))
             return FromStatic(app);
 
-        var result = await _github.GetReleasesAsync(repo, cancellationToken);
+        List<GitHubRelease>? indexed = null;
+        var inIndex = _index is not null && _index.TryGet(repo, out indexed);
+        var preferApi = forceRefresh || _preferApi();
+        if (inIndex && !preferApi)
+            return FromReleases(app, indexed!, GitHubStatus.Ok);
+
+        var result = await _github.GetReleasesAsync(repo, forceRefresh, cancellationToken);
         if (result.Status == GitHubStatus.RateLimited && result.RateLimitReset is { } reset)
             LastRateLimitReset = reset;
+
+        // La API no ha dado datos frescos: el índice es mejor respaldo que la caché.
+        if (inIndex && result.Status != GitHubStatus.Ok)
+            return FromReleases(app, indexed!, GitHubStatus.Ok);
 
         if (result.Value is null)
         {

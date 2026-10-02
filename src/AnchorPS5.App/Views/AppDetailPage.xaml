@@ -557,7 +557,7 @@
                     RowSpacing="14">
                     <FontIcon Glyph="&#xE8EC;" Style="{StaticResource InfoIconStyle}" />
                     <TextBlock Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.version}" />
-                    <TextBlock Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.Version}" />
+                    <TextBlock Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.StableVersionText}" />
 
                     <!-- Beta disponible (solo si la hay) -->
                     <c:BetaIcon

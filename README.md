@@ -33,12 +33,13 @@ o el Homebrew Browser de Wii, pero para PS5.
 
 | Ficha de una app | Betas |
 |---|---|
-| ![Ficha de ftpsrv con una actualización y varios ficheros](docs/screenshots/ficha.png) | ![Ficha de DLNAPlay con una beta disponible](docs/screenshots/beta.png) |
+| ![Ficha de ftpsrv con una actualización y varios ficheros](docs/screenshots/ficha.png) | ![Ficha de ProsperoLight con una beta disponible](docs/screenshots/beta.png) |
 
 ## Qué hace
 
 - 📚 **Catálogo de homebrew** con búsqueda, orden y secciones: Descargadas,
-  Actualizaciones y Nuevas.
+  Actualizaciones y Nuevas. Se actualiza solo.
+- 🏷️ **Origen de cada app:** del catálogo oficial o añadida por ti.
 - ⬇️ **Descargas verificadas:** cada fichero sale de la release oficial de su autor en
   GitHub y se comprueba con su SHA-256. Los `.zip`, `.7z` y `.rar` se extraen solos.
 - 🔄 **Actualizaciones por fichero** (`0.1 → 0.2`) y botón **Actualizar todo**.
@@ -48,8 +49,8 @@ o el Homebrew Browser de Wii, pero para PS5.
 - 🏷️ Etiqueta **PS4** en los ficheros que no son para PS5.
 - ➕ **Tus propias apps:** añade apps a tu copia del catálogo; se conservan cuando el
   catálogo oficial se actualiza.
-- 🔑 **Inicio de sesión con GitHub (opcional)** para subir el límite de consultas de 60
-  a 5000 por hora.
+- 🔁 **Botón Recargar** para ver al momento una versión que se acaba de publicar.
+- 🔑 **Inicio de sesión con GitHub opcional** (ver abajo).
 - 🌍 **Traducible:** todos los textos están en ficheros JSON.
 
 ## Requisitos
@@ -66,6 +67,20 @@ o el Homebrew Browser de Wii, pero para PS5.
 La primera vez te pide el idioma, la carpeta de descargas (por defecto
 `Descargas\AnchorPS5_Downloads`) y, si quieres, tu cuenta de GitHub. Es una app
 **portable**: su configuración vive en la carpeta `config` junto al `.exe`.
+
+## ¿Hace falta iniciar sesión en GitHub?
+
+No. AnchorPS5 funciona igual sin sesión:
+
+- **Sin sesión:** el catálogo oficial publica cada hora un índice con los ficheros de
+  todas sus apps y la app lo descarga de una vez, así que no te afecta el límite de
+  GitHub (60 consultas por hora). Una versión recién publicada puede tardar hasta una
+  hora y media en aparecer; si no quieres esperar, pulsa **Recargar** (te avisará de que
+  esa recarga sí gasta consultas).
+- **Con sesión:** la app pregunta a GitHub directamente, con datos más al día (como
+  mucho media hora) y un límite de 5000 consultas por hora. El inicio de sesión no pide
+  ningún permiso sobre tu cuenta: solo sirve para subir ese límite. Puedes cerrarla
+  cuando quieras desde el botón de tu cuenta, arriba a la derecha.
 
 ## El catálogo
 

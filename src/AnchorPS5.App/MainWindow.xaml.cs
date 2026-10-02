@@ -88,7 +88,9 @@ public sealed partial class MainWindow : Window
             // Las pantallas siguientes se crean ya en el idioma elegido.
             App.Localization.Load(App.Config.Language);
             UpdateTitle();
-            ShowIntroQuestion(firstRun);
+            // La pregunta de la guía vuelve con el tour; de momento, directo a la app.
+            App.FirstRun.Complete();
+            ShowShell();
         };
 
         firstRun.ShowStep(new SetupPage(viewModel), 0);

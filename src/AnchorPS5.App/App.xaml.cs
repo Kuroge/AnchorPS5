@@ -52,6 +52,8 @@ public partial class App : Application
 
     public static ChannelPreferences Channels { get; } = new(State);
 
+    public static WarningPreferences Warnings { get; } = new(State);
+
     /// <summary>
     /// Client ID de la OAuth App "AnchorPS5" en GitHub (público: identifica a la app al
     /// iniciar sesión con el flujo de dispositivo; no hay secreto).
@@ -66,7 +68,11 @@ public partial class App : Application
     /// <summary>API de GitHub con caché en config\cache\github; usa el token de la sesión si la hay.</summary>
     public static GitHubClient GitHub { get; } = new(Http, GitHubCacheDirectory, () => GitHubSession.Token);
 
-    public static PackageResolver PackageResolver { get; } = new(GitHub);
+    /// <summary>Índice de releases del catálogo oficial: evita preguntar a GitHub app por app.</summary>
+    public static ReleaseIndex ReleaseIndex { get; } = new(Http, GitHubCacheDirectory);
+
+    /// <summary>Con sesión de GitHub se pregunta a la API (datos más al día); sin sesión, el índice.</summary>
+    public static PackageResolver PackageResolver { get; } = new(GitHub, ReleaseIndex, () => GitHubSession.IsSignedIn);
 
     /// <summary>Catálogo oficial: copia local en config\ y última versión recibida en config\cache.</summary>
     public static OfficialCatalogSync OfficialSync { get; } = new(Http, Paths.ConfigDirectory, Path.Combine(Paths.ConfigDirectory, "cache"));

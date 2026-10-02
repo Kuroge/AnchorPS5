@@ -23,6 +23,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
     private readonly PackageResolver _resolver;
     private readonly Func<bool> _isSignedIn;
     private readonly OfficialCatalogSync _officialSync;
+    private readonly WarningPreferences _warnings;
 
     // Versiones oficiales que el usuario ha dejado para "más tarde" en esta sesión.
     private readonly HashSet<string> _postponedOfficial = [];
@@ -42,9 +43,11 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         DownloadsViewModel downloads,
         PackageResolver resolver,
         Func<bool> isSignedIn,
-        OfficialCatalogSync officialSync)
+        OfficialCatalogSync officialSync,
+        WarningPreferences warnings)
     {
         _officialSync = officialSync;
+        _warnings = warnings;
         _isSignedIn = isSignedIn;
         _resolver = resolver;
         _loader = loader;
@@ -169,7 +172,32 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
     }
 
     [RelayCommand]
-    private async Task LoadAsync()
+    private Task LoadAsync() => LoadCoreAsync(forceRefresh: false);
+
+    /// <summary>
+    /// Pregunta antes de recargar sin sesión (null = recargar sin preguntar). Recibe cuántas
+    /// consultas a GitHub hará la recarga y devuelve si se sigue adelante. Lo asigna la vista.
+    /// </summary>
+    public Func<int, Task<bool>>? ConfirmReload { get; set; }
+
+    /// <summary>
+    /// Botón "Recargar": pregunta a GitHub por todas las apps, sin caché ni índice, para ver al
+    /// momento una release recién publicada. Sin sesión puede gastar el límite: se avisa antes.
+    /// </summary>
+    [RelayCommand]
+    private async Task ReloadAsync()
+    {
+        if (!_isSignedIn() && ConfirmReload is not null && !_warnings.HideReloadWarning)
+        {
+            var requests = _all.Count(i => !string.IsNullOrWhiteSpace(i.Entry.App.Repo));
+            if (!await ConfirmReload(requests))
+                return;
+        }
+
+        await LoadCoreAsync(forceRefresh: true);
+    }
+
+    private async Task LoadCoreAsync(bool forceRefresh)
     {
         IsLoading = true;
         StatusMessage = string.Empty;
@@ -179,7 +207,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
 
         GitHubWarning = string.Empty;
 
-        var data = await FetchAsync();
+        var data = await FetchAsync(forceRefresh);
         IsLoading = false;
         Apply(data);
     }
@@ -253,16 +281,17 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         }
     }
 
-    private async Task<LoadedData> FetchAsync()
+    private async Task<LoadedData> FetchAsync(bool forceRefresh = false)
     {
         await SyncOfficialAsync();
+        await _resolver.LoadIndexAsync(_sources, forceRefresh);
 
         var loadCatalog = _loader.LoadAllAsync(_sources);
         var scanLibrary = Task.Run(_library.Scan);
         var result = await loadCatalog;
 
         // Ficheros publicados de cada app (de GitHub si trae repo), en paralelo.
-        var packages = await Task.WhenAll(result.Entries.Select(e => _resolver.ResolveAsync(e.App)));
+        var packages = await Task.WhenAll(result.Entries.Select(e => _resolver.ResolveAsync(e.App, forceRefresh)));
         var library = await scanLibrary;
         _newIds.UnionWith(await Task.Run(() => _seenApps.RegisterAndGetNew(result.Entries.Select(e => e.App.Id))));
         var appChannels = await Task.Run(() => result.Entries.Select(e => _channels.GetForApp(e.App.Id)).ToArray());

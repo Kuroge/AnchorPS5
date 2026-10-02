@@ -13,6 +13,22 @@ public sealed class AppState
 
     /// <summary>Canal elegido por fichero: "appId::fichero" → "beta" o "stable".</summary>
     public Dictionary<string, string> FileChannels { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>"No volver a mostrar" en el aviso de recargar sin sesión de GitHub.</summary>
+    public bool HideReloadWarning { get; set; }
+}
+
+/// <summary>Preferencias de avisos que el usuario ha pedido no volver a ver.</summary>
+public sealed class WarningPreferences(AppStateStore store)
+{
+    public bool HideReloadWarning => store.Read(state => state.HideReloadWarning);
+
+    public void HideReloadWarningFromNowOn() =>
+        store.Update<bool>((state, _) =>
+        {
+            state.HideReloadWarning = true;
+            return (true, true);
+        });
 }
 
 /// <summary>Lee y guarda config/state.json (con un cerrojo: lo usan varios servicios).</summary>

@@ -59,9 +59,10 @@ public sealed class GitHubClient
     }
 
     /// <summary>Releases del repo, de la más reciente a la más antigua (hasta 20).</summary>
-    public async Task<GitHubResult<List<GitHubRelease>>> GetReleasesAsync(GitHubRepoRef repo, CancellationToken cancellationToken = default)
+    /// <param name="forceRefresh">Pregunta a GitHub aunque la copia guardada sea reciente (recarga manual).</param>
+    public async Task<GitHubResult<List<GitHubRelease>>> GetReleasesAsync(GitHubRepoRef repo, bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
-        var result = await GetCachedAsync($"repos/{repo.Owner}/{repo.Name}/releases?per_page=20", cancellationToken);
+        var result = await GetCachedAsync($"repos/{repo.Owner}/{repo.Name}/releases?per_page=20", forceRefresh, cancellationToken);
         if (result.Value is null)
             return new GitHubResult<List<GitHubRelease>>(null, result.Status, result.RateLimitReset);
 
@@ -76,12 +77,12 @@ public sealed class GitHubClient
         }
     }
 
-    private async Task<GitHubResult<string>> GetCachedAsync(string path, CancellationToken cancellationToken)
+    private async Task<GitHubResult<string>> GetCachedAsync(string path, bool forceRefresh, CancellationToken cancellationToken)
     {
         var cacheFile = Path.Combine(_cacheDirectory, CacheName(path));
         var cached = ReadCache(cacheFile);
 
-        if (cached is not null && _now() - cached.FetchedAt < MaxAge)
+        if (!forceRefresh && cached is not null && _now() - cached.FetchedAt < MaxAge)
             return new GitHubResult<string>(cached.Body, GitHubStatus.Ok);
 
         if (BlockedUntil is { } blocked)

@@ -28,8 +28,13 @@ First test version.
   want (keeping or deleting the beta).
 - **Optional GitHub sign-in** to raise the request limit from 60 to 5000 per hour, with
   your picture and profile in the title bar.
-- **Efficient GitHub requests:** 30-minute cache, automatic background refresh and
-  automatic waiting when the limit is reached.
+- **No more GitHub limit trouble:** the official catalog publishes an hourly index with
+  the files of all its apps; without a session the app downloads it in one go instead of
+  asking app by app. Signed in, it asks GitHub directly (fresher data) and the index is
+  the fallback. For your own apps: 30-minute cache, automatic background refresh and automatic
+  waiting when the limit is reached.
+- **Reload button** to see a just-published version right away (without a session, it
+  warns first that it may use up the GitHub limit).
 - **First-run setup:** language, download folder and GitHub account.
 - **Translatable texts** from JSON files (`lang/`), catalog descriptions included.
   Spanish out of the box.

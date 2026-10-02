@@ -33,11 +33,13 @@ Homebrew Browser, but for PS5.
 
 | App page | Betas |
 |---|---|
-| ![ftpsrv page with an update and several files](docs/screenshots/ficha.png) | ![DLNAPlay page with a beta available](docs/screenshots/beta.png) |
+| ![ftpsrv page with an update and several files](docs/screenshots/ficha.png) | ![ProsperoLight page with a beta available](docs/screenshots/beta.png) |
 
 ## What it does
 
 - 📚 **Homebrew catalog** with search, sorting and sections: Downloaded, Updates and New.
+  It updates itself.
+- 🏷️ **Origin of each app:** from the official catalog or added by you.
 - ⬇️ **Verified downloads:** every file comes from its author's official GitHub release
   and is checked against its SHA-256. `.zip`, `.7z` and `.rar` files are extracted
   automatically.
@@ -47,7 +49,8 @@ Homebrew Browser, but for PS5.
 - 🏷️ **PS4** tag on files that are not for PS5.
 - ➕ **Your own apps:** add apps to your copy of the catalog; they're kept when the
   official catalog is updated.
-- 🔑 **Optional GitHub sign-in** to raise the request limit from 60 to 5000 per hour.
+- 🔁 **Reload button** to see a version that has just been published right away.
+- 🔑 **Optional GitHub sign-in** (see below).
 - 🌍 **Translatable:** all texts live in JSON files.
 
 ## Requirements
@@ -64,6 +67,20 @@ Homebrew Browser, but for PS5.
 The first time, it asks for the language, the download folder (by default
 `Downloads\AnchorPS5_Downloads`) and, if you want, your GitHub account. It's a
 **portable** app: its settings live in the `config` folder next to the `.exe`.
+
+## Do I need to sign in to GitHub?
+
+No. AnchorPS5 works the same without a session:
+
+- **Without a session:** the official catalog publishes an hourly index with the files of
+  all its apps and the app downloads it in one go, so GitHub's limit (60 requests per
+  hour) doesn't affect you. A just-published version may take up to an hour and a half to
+  show up; if you don't want to wait, press **Reload** (it warns you that this reload does
+  use requests).
+- **Signed in:** the app asks GitHub directly, with fresher data (half an hour at most)
+  and a limit of 5000 requests per hour. Signing in doesn't ask for any permission on your
+  account: it only raises that limit. You can sign out whenever you want from your
+  account button, at the top right.
 
 ## The catalog
 

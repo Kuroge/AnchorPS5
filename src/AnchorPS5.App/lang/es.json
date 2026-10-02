@@ -27,6 +27,11 @@
   "intro.skip": "Saltar",
 
   "catalog.refresh": "Recargar",
+  "catalog.refreshTooltip": "Recargar desde GitHub (para ver al momento las versiones recién publicadas)",
+  "reload.title": "Recargar desde GitHub",
+  "reload.text": "Para ver al momento una versión recién publicada, la app preguntará a GitHub por cada app del catálogo (unas {0} consultas). Sin sesión, GitHub permite 60 consultas por hora: si recargas varias veces seguidas puedes llegar al límite y tendrás que esperar un rato. Si inicias sesión con GitHub, el límite sube a 5000 por hora y este aviso no vuelve a salir.",
+  "reload.confirm": "Recargar",
+  "reload.dontShowAgain": "No volver a mostrar este aviso",
   "catalog.loading": "Cargando catálogo…",
   "catalog.empty": "No hay aplicaciones en el catálogo. Revisa las fuentes en config/config.json.",
   "catalog.noResults": "Ninguna aplicación coincide con «{0}».",

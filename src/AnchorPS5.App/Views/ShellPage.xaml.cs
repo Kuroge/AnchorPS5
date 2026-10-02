@@ -40,7 +40,8 @@ public sealed partial class ShellPage : Page
             downloads,
             App.PackageResolver,
             () => App.GitHubSession.IsSignedIn,
-            App.OfficialSync)
+            App.OfficialSync,
+            App.Warnings)
         {
             AskOfficialUpdate = AskOfficialUpdateAsync,
         };

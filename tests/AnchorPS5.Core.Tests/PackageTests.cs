@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -441,6 +441,18 @@ public sealed class GitHubClientTests : IDisposable
         Assert.Equal(1, calls);
         Assert.Equal(GitHubStatus.Ok, second.Status);
         Assert.Single(second.Value!);
+    }
+
+    [Fact]
+    public async Task ForceRefresh_AsksGitHub_EvenWithAFreshCache()
+    {
+        var calls = 0;
+        var client = Client(_ => { calls++; return Ok("\"v1\""); }, maxAge: TimeSpan.FromMinutes(30));
+
+        await client.GetReleasesAsync(Repo);
+        await client.GetReleasesAsync(Repo, forceRefresh: true);
+
+        Assert.Equal(2, calls);
     }
 
     [Fact]

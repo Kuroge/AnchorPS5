@@ -28,8 +28,13 @@ Primera versión de prueba.
   cuando quieras (conservando o borrando la beta).
 - **Inicio de sesión con GitHub (opcional)** para subir el límite de consultas de 60 a
   5000 por hora, con tu foto y perfil en la barra superior.
-- **Consultas a GitHub eficientes:** caché de 30 minutos, refresco automático en segundo
-  plano y espera automática si se alcanza el límite.
+- **Sin depender del límite de GitHub:** el catálogo oficial publica cada hora un índice
+  con los ficheros de todas sus apps, y sin sesión la app lo descarga de una vez en lugar
+  de preguntar app por app. Con sesión se pregunta a GitHub directamente (datos más al
+  día) y el índice queda de respaldo. Para tus apps propias: caché de 30 minutos, refresco automático
+  en segundo plano y espera automática si se alcanza el límite.
+- **Botón Recargar** para ver al momento una versión recién publicada (sin sesión, avisa
+  antes de que pueda gastar el límite de GitHub).
 - **Configuración inicial:** idioma, carpeta de descargas y cuenta de GitHub.
 - **Textos traducibles** desde ficheros JSON (`lang/`), también las descripciones del
   catálogo. De fábrica, en español.

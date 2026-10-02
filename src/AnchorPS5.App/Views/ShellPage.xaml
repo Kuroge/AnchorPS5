@@ -60,8 +60,11 @@
             </NavigationViewItem>
         </NavigationView.MenuItems>
         <NavigationView.FooterMenuItems>
-            <!-- La guía se conecta en la fase del tour. -->
-            <NavigationViewItem Content="{l:Loc Key=nav.guide}" SelectsOnInvoked="False">
+            <!-- La guía se conecta en la fase del tour; oculta hasta entonces. -->
+            <NavigationViewItem
+                Content="{l:Loc Key=nav.guide}"
+                SelectsOnInvoked="False"
+                Visibility="Collapsed">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE7BE;" />
                 </NavigationViewItem.Icon>

@@ -77,7 +77,11 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
     /// <summary>Versión publicada: la de GitHub o, si no hay, la del catálogo.</summary>
     public string Version => Package.DisplayVersion ?? Entry.App.Version;
     public string VersionText => VersionLabel.Format(Version);
-    public bool HasVersion => !string.IsNullOrWhiteSpace(Version);
+    /// <summary>Chip de versión: no se muestra si la única versión es una beta (ya sale en su chip).</summary>
+    public bool HasVersion => !string.IsNullOrWhiteSpace(Version) && !(HasBeta && Package.StableVersion is null);
+
+    /// <summary>Versión estable para Información ("—" si la app solo publica betas).</summary>
+    public string StableVersionText => HasBeta && Package.StableVersion is null ? "—" : Version;
 
     public bool HasBeta => Package.BetaVersion is not null;
     public string BetaText { get; }

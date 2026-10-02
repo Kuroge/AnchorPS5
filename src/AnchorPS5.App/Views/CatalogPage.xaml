@@ -58,8 +58,8 @@
                 Grid.Column="4"
                 VerticalAlignment="Center"
                 AutomationProperties.Name="{l:Loc Key=catalog.refresh}"
-                Command="{x:Bind ViewModel.LoadCommand}"
-                ToolTipService.ToolTip="{l:Loc Key=catalog.refresh}">
+                Command="{x:Bind ViewModel.ReloadCommand}"
+                ToolTipService.ToolTip="{l:Loc Key=catalog.refreshTooltip}">
                 <FontIcon FontSize="16" Glyph="&#xE72C;" />
             </Button>
         </Grid>
