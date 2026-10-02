@@ -7,7 +7,7 @@ All notable changes to AnchorPS5. The format follows
 [SemVer](https://semver.org/). While the app is in **alpha**, things may change a lot
 between versions.
 
-## [0.1.0-alpha.1] — Unreleased
+## [0.1.0-alpha.1] — 2026-10-02
 
 First test version.
 
