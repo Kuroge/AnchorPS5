@@ -210,6 +210,26 @@ public sealed class OfficialCatalogSyncTests : IDisposable
     }
 
     [Fact]
+    public async Task Bundle_SeedsTheFirstRun_AndCountsAsOfficial()
+    {
+        var bundle = Path.Combine(_root, "bundle.json");
+        Directory.CreateDirectory(_root);
+        File.WriteAllText(bundle, Catalog("ftpsrv", "vieja"));
+
+        var sync = Sync(offline: true);
+        Assert.True(sync.SeedFromBundle(_source, bundle));
+        Assert.False(sync.SeedFromBundle(_source, bundle)); // solo la primera vez
+        Assert.Equal(["ftpsrv", "vieja"], LocalIds());
+
+        // El repo ya no tiene "vieja": se actualiza sin preguntar (no es una app propia).
+        _remote = Catalog("ftpsrv");
+        var result = await Sync().CheckAsync(_source);
+
+        Assert.Equal(OfficialSyncState.Updated, result.State);
+        Assert.Equal(["ftpsrv"], LocalIds());
+    }
+
+    [Fact]
     public async Task Loader_ReadsTheLocalCopy()
     {
         await Sync().CheckAsync(_source);

@@ -70,6 +70,22 @@ public sealed class ReleaseIndexTests : IDisposable
     }
 
     [Fact]
+    public async Task Bundle_SeedsTheIndex_AndAnOldCopyStillWorksOffline()
+    {
+        var bundle = Path.Combine(_root, "releases-bundle.json");
+        Directory.CreateDirectory(_root);
+        File.WriteAllText(bundle, IndexJson(_now.AddDays(-20)));
+        _offline = true;
+
+        var index = Index();
+        Assert.True(index.SeedFromBundle(_official, bundle));
+        Assert.False(index.SeedFromBundle(_official, bundle));
+        await index.LoadAsync([_official]);
+
+        Assert.True(index.TryGet(new GitHubRepoRef("autor", "app"), out _));
+    }
+
+    [Fact]
     public async Task StaleIndex_IsIgnored()
     {
         var index = Index(IndexJson(_now.AddDays(-3)));

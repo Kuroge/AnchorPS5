@@ -88,6 +88,7 @@ public partial class App : Application
         Config = ConfigService.LoadOrCreate(detectedLanguage);
         Localization.Load(Config.Language);
         FirstRun = new FirstRunService(ConfigService, Config);
+        SeedOfficialCatalog();
 
         // El token se lee al momento; el perfil llega después sin bloquear el arranque.
         _ = GitHubSession.RestoreAsync();
@@ -102,6 +103,20 @@ public partial class App : Application
 
         _window = new MainWindow();
         _window.Activate();
+    }
+
+    /// <summary>
+    /// Primer arranque: el catálogo oficial y su índice que viajan con la app (carpeta
+    /// "catalog" junto al exe) se usan hasta que se pueda descargar la versión al día.
+    /// </summary>
+    private static void SeedOfficialCatalog()
+    {
+        var bundle = Path.Combine(AppContext.BaseDirectory, "catalog");
+        foreach (var source in Config.Sources.Where(s => s.Enabled && s.Type == SourceType.Official))
+        {
+            OfficialSync.SeedFromBundle(source, Path.Combine(bundle, "catalog.json"));
+            ReleaseIndex.SeedFromBundle(source, Path.Combine(bundle, ReleaseIndex.FileName));
+        }
     }
 
     private static HttpClient CreateHttpClient(TimeSpan timeout)

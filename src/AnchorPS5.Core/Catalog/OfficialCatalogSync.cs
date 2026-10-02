@@ -70,6 +70,33 @@ public sealed class OfficialCatalogSync
         _cacheDirectory = cacheDirectory;
     }
 
+    /// <summary>
+    /// Primer arranque: si aún no hay copia local, la crea con el catálogo que viaja con la
+    /// app y lo marca como última versión oficial recibida (así ninguna app se confunde con
+    /// una propia y funciona sin conexión). Devuelve si ha sembrado algo.
+    /// </summary>
+    public bool SeedFromBundle(Source source, string bundledCatalogPath)
+    {
+        var localPath = LocalPath(source);
+        if (File.Exists(localPath) || ReadSnapshot(source) is not null || !File.Exists(bundledCatalogPath))
+            return false;
+
+        try
+        {
+            var json = File.ReadAllText(bundledCatalogPath);
+            if (Parse(json) is null)
+                return false;
+
+            WriteFile(localPath, json);
+            WriteSnapshot(source, new Snapshot(null, json));
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Comprueba si hay versión oficial nueva y, si no hay apps propias, la aplica.</summary>
     public async Task<OfficialSyncResult> CheckAsync(Source source, CancellationToken cancellationToken = default)
     {

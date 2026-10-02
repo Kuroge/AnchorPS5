@@ -40,6 +40,34 @@ public sealed class ReleaseIndex
     public bool TryGet(GitHubRepoRef repo, out List<GitHubRelease> releases) =>
         _repos.TryGetValue($"{repo.Owner}/{repo.Name}", out releases!);
 
+    /// <summary>
+    /// Primer arranque: guarda como copia (caducada, para que se descargue en cuanto haya
+    /// conexión) el índice que viaja con la app. Devuelve si ha sembrado algo.
+    /// </summary>
+    public bool SeedFromBundle(Source source, string bundledIndexPath)
+    {
+        if (!Uri.TryCreate(source.Url, UriKind.Absolute, out var catalogUrl) || !File.Exists(bundledIndexPath))
+            return false;
+
+        var cacheFile = CacheFile(new Uri(catalogUrl, FileName));
+        if (File.Exists(cacheFile))
+            return false;
+
+        try
+        {
+            var body = File.ReadAllText(bundledIndexPath);
+            if (Parse(body) is null)
+                return false;
+
+            WriteCache(cacheFile, new CacheEntry(null, body));
+            return File.Exists(cacheFile);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Carga los índices de las fuentes oficiales activas (sin red si la copia es reciente).</summary>
     /// <param name="forceRefresh">Lo descarga aunque la copia guardada sea reciente (recarga manual).</param>
     public async Task LoadAsync(IEnumerable<Source> sources, bool forceRefresh = false, CancellationToken cancellationToken = default)
@@ -50,8 +78,11 @@ public sealed class ReleaseIndex
             if (!Uri.TryCreate(source.Url, UriKind.Absolute, out var catalogUrl))
                 continue;
 
-            var index = await LoadOneAsync(new Uri(catalogUrl, FileName), forceRefresh, cancellationToken);
-            if (index is null || _now() - index.GeneratedAt > MaxStaleness)
+            var (index, downloaded) = await LoadOneAsync(new Uri(catalogUrl, FileName), forceRefresh, cancellationToken);
+
+            // Recién descargado y viejo: el repo ha dejado de actualizarlo, mejor la API.
+            // Sin conexión, la última copia vale aunque sea vieja (no hay nada mejor).
+            if (index is null || (downloaded && _now() - index.GeneratedAt > MaxStaleness))
                 continue;
 
             foreach (var (repo, releases) in index.Repos)
@@ -61,18 +92,21 @@ public sealed class ReleaseIndex
         _repos = repos;
     }
 
-    private async Task<IndexFile?> LoadOneAsync(Uri url, bool forceRefresh, CancellationToken cancellationToken)
+    private string CacheFile(Uri url) => Path.Combine(_cacheDirectory, $"releases-{Hash(url.AbsoluteUri)}.json");
+
+    /// <returns>El índice y si viene de la red (o de una copia reciente) en vez de ser un respaldo sin conexión.</returns>
+    private async Task<(IndexFile? Index, bool Downloaded)> LoadOneAsync(Uri url, bool forceRefresh, CancellationToken cancellationToken)
     {
-        var cacheFile = Path.Combine(_cacheDirectory, $"releases-{Hash(url.AbsoluteUri)}.json");
+        var cacheFile = CacheFile(url);
         var cached = ReadCache(cacheFile);
         if (!forceRefresh && cached is not null && _now() - cached.FetchedAt < MaxAge)
-            return Parse(cached.Body);
+            return (Parse(cached.Body), true);
 
         try
         {
             // Una ruta de fichero sirve para probar el índice antes de publicarlo.
             if (url.IsFile)
-                return File.Exists(url.LocalPath) ? Parse(await File.ReadAllTextAsync(url.LocalPath, cancellationToken)) : null;
+                return (File.Exists(url.LocalPath) ? Parse(await File.ReadAllTextAsync(url.LocalPath, cancellationToken)) : null, true);
 
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             if (cached?.ETag is { Length: > 0 } etag)
@@ -82,24 +116,24 @@ public sealed class ReleaseIndex
             if (response.StatusCode == System.Net.HttpStatusCode.NotModified && cached is not null)
             {
                 WriteCache(cacheFile, cached with { FetchedAt = _now() });
-                return Parse(cached.Body);
+                return (Parse(cached.Body), true);
             }
 
             if (!response.IsSuccessStatusCode)
-                return cached is null ? null : Parse(cached.Body);
+                return (cached is null ? null : Parse(cached.Body), false);
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             if (Parse(body) is not { } index)
-                return cached is null ? null : Parse(cached.Body);
+                return (cached is null ? null : Parse(cached.Body), false);
 
             WriteCache(cacheFile, new CacheEntry(response.Headers.ETag?.ToString(), body, _now()));
-            return index;
+            return (index, true);
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or UnauthorizedAccessException
             || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))
         {
             // Sin conexión: la última copia guardada.
-            return cached is null ? null : Parse(cached.Body);
+            return (cached is null ? null : Parse(cached.Body), false);
         }
     }
 
