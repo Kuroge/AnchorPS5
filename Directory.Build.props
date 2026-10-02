@@ -10,6 +10,7 @@
     <Company>cheyen2008</Company>
     <Product>AnchorPS5</Product>
     <Copyright>© cheyen2008</Copyright>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
