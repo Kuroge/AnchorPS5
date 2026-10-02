@@ -346,6 +346,10 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         }
 
         GitHubWarning = BuildGitHubWarning(packages);
+        foreach (var failed in result.FailedSources)
+            AnchorPS5.Core.Diagnostics.AppLog.Warn($"Fuente no cargada: {failed.Source.Name} ({failed.Error})");
+        if (IsGitHubRateLimited)
+            AnchorPS5.Core.Diagnostics.AppLog.Info($"Límite de GitHub alcanzado (hasta {_resolver.LastRateLimitReset:u})");
         UpdateCounts();
 
         SourceErrors = string.Join(Environment.NewLine, result.FailedSources.Select(f =>

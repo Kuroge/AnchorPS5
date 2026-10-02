@@ -239,6 +239,15 @@ public sealed partial class AppDetailPage : Page
         return await dialog.ShowAsync();
     }
 
+    private void OnBackClick(object sender, RoutedEventArgs e)
+    {
+        if (Frame.CanGoBack)
+            Frame.GoBack(new Microsoft.UI.Xaml.Media.Animation.SlideNavigationTransitionInfo
+            {
+                Effect = Microsoft.UI.Xaml.Media.Animation.SlideNavigationTransitionEffect.FromLeft,
+            });
+    }
+
     private static string Loc(string key, params object?[] args) =>
         args.Length == 0 ? App.Localization.Get(key) : App.Localization.Format(key, args);
 }

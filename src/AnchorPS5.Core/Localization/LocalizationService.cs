@@ -124,7 +124,19 @@ public sealed class LocalizationService
         if (!File.Exists(file))
             return null;
 
-        using var doc = JsonDocument.Parse(File.ReadAllText(file), DocumentOptions);
+        JsonDocument doc;
+        try
+        {
+            doc = JsonDocument.Parse(File.ReadAllText(file), DocumentOptions);
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
+            // Un idioma mal escrito no tumba la app: se usa el de respaldo y queda en el log.
+            Diagnostics.AppLog.Warn($"No se ha podido leer lang/{languageCode}.json", ex);
+            return null;
+        }
+
+        using var _ = doc;
         var strings = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var property in doc.RootElement.EnumerateObject())
         {

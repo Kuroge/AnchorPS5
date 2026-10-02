@@ -38,6 +38,20 @@
             Padding="32,20,32,32"
             Spacing="8">
 
+            <!-- Volver, junto al contenido (en pantallas grandes la barra queda lejos) -->
+            <Button
+                Margin="-8,0,0,4"
+                Padding="8,4"
+                AutomationProperties.Name="{l:Loc Key=action.back}"
+                Background="Transparent"
+                BorderThickness="0"
+                Click="OnBackClick">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon FontSize="12" Glyph="&#xE72B;" />
+                    <TextBlock Text="{l:Loc Key=action.back}" />
+                </StackPanel>
+            </Button>
+
             <!-- Cabecera -->
             <Grid Margin="0,0,0,16" CornerRadius="12">
                 <Border

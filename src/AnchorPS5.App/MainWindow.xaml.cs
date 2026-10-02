@@ -36,6 +36,32 @@ public sealed partial class MainWindow : Window
             ShowSetup();
         else
             ShowShell();
+
+        if (App.ConfigProblem is not null)
+            Root.Loaded += OnRootLoadedShowConfigProblem;
+    }
+
+    /// <summary>config.json estaba mal escrito: se avisa de dónde quedó el original.</summary>
+    private async void OnRootLoadedShowConfigProblem(object sender, RoutedEventArgs e)
+    {
+        Root.Loaded -= OnRootLoadedShowConfigProblem;
+        if (App.ConfigProblem is not { } problem)
+            return;
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Root.XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+            RequestedTheme = Root.ActualTheme,
+            Title = App.Localization.Get("config.brokenTitle"),
+            Content = new TextBlock
+            {
+                Text = App.Localization.Format("config.brokenText", problem.Line, Path.GetFileName(problem.BrokenCopy)),
+                TextWrapping = TextWrapping.Wrap,
+            },
+            CloseButtonText = App.Localization.Get("common.ok"),
+        };
+        await dialog.ShowAsync();
     }
 
     private void ConfigureWindow()

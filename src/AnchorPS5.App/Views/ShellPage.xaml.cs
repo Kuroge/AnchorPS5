@@ -80,6 +80,13 @@ public sealed partial class ShellPage : Page
 
     private void OnItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
+        if (args.InvokedItemContainer?.Tag is "About")
+        {
+            if (ContentFrame.CurrentSourcePageType != typeof(AboutPage))
+                ContentFrame.Navigate(typeof(AboutPage), null, new EntranceNavigationTransitionInfo());
+            return;
+        }
+
         if (args.InvokedItemContainer?.Tag is not string tag || !Enum.TryParse<CatalogFilter>(tag, out var filter))
             return;
 
@@ -191,5 +198,15 @@ public sealed partial class ShellPage : Page
         RefreshNow();
     });
 
-    private void OnNavigated(object sender, NavigationEventArgs e) => CanGoBackChanged?.Invoke(this, ContentFrame.CanGoBack);
+    private void OnNavigated(object sender, NavigationEventArgs e)
+    {
+        CanGoBackChanged?.Invoke(this, ContentFrame.CanGoBack);
+
+        // El menú marca la página que se ve (también al volver atrás desde "Acerca de").
+        if (e.SourcePageType == typeof(AboutPage))
+            NavView.SelectedItem = AboutItem;
+        else if (ReferenceEquals(NavView.SelectedItem, AboutItem))
+            NavView.SelectedItem = NavView.MenuItems.OfType<NavigationViewItem>()
+                .FirstOrDefault(i => i.Tag as string == _catalog.Filter.ToString());
+    }
 }

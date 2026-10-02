@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using AnchorPS5.Core.Localization;
 
 namespace AnchorPS5.Core.Tests;
@@ -63,5 +63,18 @@ public sealed class LocalizationServiceTests : IDisposable
 
         Assert.Equal("es", service.CurrentLanguage);
         Assert.Equal("Catálogo", service.Get("nav.catalog"));
+    }
+
+    [Fact]
+    public void Load_BrokenLanguageFile_FallsBackInsteadOfCrashing()
+    {
+        Write("es", """{ "_meta": { "code": "es", "name": "Español" }, "a": "Hola" }""");
+        Write("en", """{ "a": "Hello", }}}""");
+        var service = new LocalizationService(_langDir);
+
+        service.Load("en");
+
+        Assert.Equal("es", service.CurrentLanguage);
+        Assert.Equal("Hola", service.Get("a"));
     }
 }

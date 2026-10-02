@@ -4,6 +4,7 @@ using AnchorPS5.Core;
 using AnchorPS5.Core.Catalog;
 using AnchorPS5.Core.Configuration;
 using AnchorPS5.App.Services;
+using AnchorPS5.Core.Diagnostics;
 using AnchorPS5.Core.GitHub;
 using AnchorPS5.Core.Library;
 using AnchorPS5.Core.Packages;
@@ -20,7 +21,13 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
+        AppLog.Initialize(Path.Combine(Paths.ConfigDirectory, "logs"));
+        UnhandledException += (_, e) => AppLog.Error("Excepción no controlada", e.Exception);
+        TaskScheduler.UnobservedTaskException += (_, e) => AppLog.Error("Excepción no observada en una tarea", e.Exception);
     }
+
+    /// <summary>Si config.json estaba mal escrito: dónde quedó el original (la ventana avisa).</summary>
+    public static ConfigLoadProblem? ConfigProblem { get; private set; }
 
     /// <summary>Versión de la app (SemVer, p. ej. 0.1.0-alpha.1), de Directory.Build.props.</summary>
     public static string Version { get; } =
@@ -86,7 +93,11 @@ public partial class App : Application
         // Sin config.json se crea con los valores por defecto y el idioma del sistema (si hay traducción).
         var detectedLanguage = Localization.DetectLanguage(CultureInfo.CurrentUICulture);
         Config = ConfigService.LoadOrCreate(detectedLanguage);
+        ConfigProblem = ConfigService.LastLoadProblem;
         Localization.Load(Config.Language);
+        AppLog.Info($"AnchorPS5 {Version} · {Environment.OSVersion} · idioma {Localization.CurrentLanguage}");
+        if (ConfigProblem is { } problem)
+            AppLog.Warn($"config.json mal escrito (línea {problem.Line}); apartado como {problem.BrokenCopy}");
         FirstRun = new FirstRunService(ConfigService, Config);
         SeedOfficialCatalog();
 

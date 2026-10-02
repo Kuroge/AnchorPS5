@@ -112,6 +112,7 @@ public sealed class DownloadJob
     {
         Error = error;
         ErrorDetail = detail;
+        Diagnostics.AppLog.Warn($"Descarga fallida ({error}): {App.Id} · {File.FileName} {File.Version} · {detail}");
         SetPhase(DownloadPhase.Failed);
     }
 }

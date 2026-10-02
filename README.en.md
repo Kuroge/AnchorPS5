@@ -64,6 +64,11 @@ Homebrew Browser, but for PS5.
 2. Extract it to a folder (e.g. `C:\AnchorPS5`).
 3. Open `AnchorPS5.exe`.
 
+> **Windows SmartScreen:** the app isn't signed (a code-signing certificate costs money),
+> so the first time Windows may warn that it's an unknown app. Click **More info → Run
+> anyway**. If you prefer, check the `.zip`'s SHA-256 first against the `.sha256` file
+> that comes with every version.
+
 The first time, it asks for the language, the download folder (by default
 `Downloads\AnchorPS5_Downloads`) and, if you want, your GitHub account. It's a
 **portable** app: its settings live in the `config` folder next to the `.exe`.

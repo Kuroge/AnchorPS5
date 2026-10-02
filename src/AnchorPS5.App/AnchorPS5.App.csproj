@@ -6,6 +6,8 @@
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>AnchorPS5.App</RootNamespace>
+    <!-- Satélites de .NET solo en los idiomas de la app (las carpetas de idioma de Windows App SDK se recortan al empaquetar). -->
+    <SatelliteResourceLanguages>en;es</SatelliteResourceLanguages>
     <AssemblyName>AnchorPS5</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\AnchorPS5.ico</ApplicationIcon>

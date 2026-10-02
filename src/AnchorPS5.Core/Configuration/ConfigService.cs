@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using AnchorPS5.Core.Models;
 using AnchorPS5.Core.Platform;
 
@@ -37,8 +37,16 @@ public sealed class ConfigService
     /// y <paramref name="initialLanguage"/> como idioma (el autodetectado).
     /// Los campos ausentes o vacíos toman su valor por defecto.
     /// </summary>
+    /// <summary>
+    /// Si config.json no se ha podido leer (JSON mal escrito), dónde se ha guardado el
+    /// original y en qué línea estaba el error. La app avisa y arranca con la configuración
+    /// por defecto (vuelve a pedir idioma y carpeta).
+    /// </summary>
+    public ConfigLoadProblem? LastLoadProblem { get; private set; }
+
     public AppConfig LoadOrCreate(string initialLanguage = "es")
     {
+        LastLoadProblem = null;
         if (!File.Exists(_paths.ConfigFile))
         {
             var created = CreateDefault(initialLanguage);
@@ -47,7 +55,23 @@ public sealed class ConfigService
         }
 
         var json = File.ReadAllText(_paths.ConfigFile);
-        var config = JsonSerializer.Deserialize<AppConfig>(json, JsonDefaults.Options) ?? CreateDefault();
+        AppConfig? config;
+        try
+        {
+            config = JsonSerializer.Deserialize<AppConfig>(json, JsonDefaults.Options);
+        }
+        catch (JsonException ex)
+        {
+            // Se aparta el fichero roto (para poder recuperarlo a mano) y se empieza de cero.
+            var broken = Path.Combine(_paths.ConfigDirectory, $"config.broken-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+            File.Move(_paths.ConfigFile, broken, overwrite: true);
+            LastLoadProblem = new ConfigLoadProblem(broken, (ex.LineNumber ?? 0) + 1);
+            var created = CreateDefault(initialLanguage);
+            Save(created);
+            return created;
+        }
+
+        config ??= CreateDefault(initialLanguage);
         ApplyDefaults(config);
         return config;
     }
@@ -76,3 +100,7 @@ public sealed class ConfigService
         config.Sources ??= [];
     }
 }
+
+/// <param name="BrokenCopy">Dónde ha quedado el config.json que no se pudo leer.</param>
+/// <param name="Line">Línea (desde 1) del error de JSON.</param>
+public sealed record ConfigLoadProblem(string BrokenCopy, long Line);

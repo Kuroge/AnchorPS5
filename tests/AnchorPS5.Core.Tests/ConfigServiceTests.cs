@@ -1,4 +1,4 @@
-using AnchorPS5.Core.Configuration;
+﻿using AnchorPS5.Core.Configuration;
 using AnchorPS5.Core.Models;
 
 namespace AnchorPS5.Core.Tests;
@@ -22,6 +22,30 @@ public sealed class ConfigServiceTests : IDisposable
         Assert.Equal("en", config.Language);
         Assert.EndsWith("AnchorPS5_Downloads", config.DownloadPath);
         Assert.False(config.FirstRunCompleted);
+    }
+
+    [Fact]
+    public void LoadOrCreate_BrokenJson_KeepsACopy_AndStartsWithDefaults()
+    {
+        Directory.CreateDirectory(_paths.ConfigDirectory);
+        // Falta la coma al final de la línea 3: el error está en la línea 4.
+        File.WriteAllText(_paths.ConfigFile, """
+            {
+              "language": "es",
+              "downloadPath": "C:/x"
+              "theme": "dark"
+            }
+            """);
+        var service = new ConfigService(_paths);
+
+        var config = service.LoadOrCreate("en");
+
+        Assert.Equal("en", config.Language);
+        Assert.False(config.FirstRunCompleted);
+        Assert.NotNull(service.LastLoadProblem);
+        Assert.Equal(4, service.LastLoadProblem!.Line);
+        Assert.True(File.Exists(service.LastLoadProblem.BrokenCopy));
+        Assert.Contains("\"theme\": \"dark\"", File.ReadAllText(service.LastLoadProblem.BrokenCopy));
     }
 
     [Fact]

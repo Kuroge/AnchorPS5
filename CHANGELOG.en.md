@@ -35,6 +35,11 @@ First test version.
   waiting when the limit is reached.
 - **Reload button** to see a just-published version right away (without a session, it
   warns first that it may use up the GitHub limit).
+- **About:** version, license, links, third-party components, credits and access to the
+  app log (`config/logs`) to report bugs.
+- **Sturdier:** a badly written `config.json` or language file no longer closes the app
+  (you're warned and a copy of the file is kept aside).
+- **Back** button inside each app's page.
 - **First-run setup:** language, download folder and GitHub account.
 - **Translatable texts** from JSON files (`lang/`), catalog descriptions included.
   **Spanish and English** out of the box; the language is chosen in the first-run setup,

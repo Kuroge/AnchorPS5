@@ -64,6 +64,11 @@ o el Homebrew Browser de Wii, pero para PS5.
 2. Descomprímelo en una carpeta (p. ej. `C:\AnchorPS5`).
 3. Abre `AnchorPS5.exe`.
 
+> **Windows SmartScreen:** la app no va firmada (un certificado de firma de código es de
+> pago), así que la primera vez Windows puede avisar de que es una app desconocida. Pulsa
+> **Más información → Ejecutar de todas formas**. Si lo prefieres, comprueba antes el
+> SHA-256 del `.zip` con el `.sha256` que acompaña a cada versión.
+
 La primera vez te pide el idioma, la carpeta de descargas (por defecto
 `Descargas\AnchorPS5_Downloads`) y, si quieres, tu cuenta de GitHub. Es una app
 **portable**: su configuración vive en la carpeta `config` junto al `.exe`.

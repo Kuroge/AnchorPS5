@@ -35,6 +35,11 @@ Primera versión de prueba.
   en segundo plano y espera automática si se alcanza el límite.
 - **Botón Recargar** para ver al momento una versión recién publicada (sin sesión, avisa
   antes de que pueda gastar el límite de GitHub).
+- **Acerca de:** versión, licencia, enlaces, componentes de terceros, créditos y acceso al
+  registro de la app (`config/logs`) para reportar fallos.
+- **Más robusta:** un `config.json` o un idioma mal escritos ya no cierran la app (se avisa
+  y se aparta una copia del fichero).
+- Botón **Atrás** dentro de la ficha de cada app.
 - **Configuración inicial:** idioma, carpeta de descargas y cuenta de GitHub.
 - **Textos traducibles** desde ficheros JSON (`lang/`), también las descripciones del
   catálogo. De fábrica, en **español e inglés**; el idioma se elige en la configuración inicial, con

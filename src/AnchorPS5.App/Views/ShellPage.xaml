@@ -69,6 +69,11 @@
                     <FontIcon Glyph="&#xE7BE;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
+            <NavigationViewItem x:Name="AboutItem" Content="{l:Loc Key=nav.about}" Tag="About">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE946;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
         </NavigationView.FooterMenuItems>
 
         <Frame x:Name="ContentFrame" Navigated="OnNavigated" />
