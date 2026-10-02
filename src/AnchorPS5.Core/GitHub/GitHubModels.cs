@@ -67,7 +67,8 @@ public sealed class GitHubRelease
 
     /// <summary>Versión a partir de la etiqueta, sin la "v" inicial.</summary>
     [JsonIgnore]
-    public string Version => TagName.StartsWith('v') || TagName.StartsWith('V') ? TagName[1..] : TagName;
+    // "v1.2" -> "1.2"; una etiqueta que solo empieza por v ("vk-285-117") se deja tal cual.
+    public string Version => TagName.Length > 1 && TagName[0] is 'v' or 'V' && char.IsDigit(TagName[1]) ? TagName[1..] : TagName;
 }
 
 public sealed class GitHubAsset

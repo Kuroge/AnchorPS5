@@ -652,3 +652,18 @@ public sealed class MultiFileDownloadTests : IDisposable
             Task.FromResult(respond(request));
     }
 }
+
+public sealed class VersionLabelTests
+{
+    [Theory]
+    [InlineData("0.21.1", "v0.21.1")]
+    [InlineData("v1.2", "v1.2")]
+    [InlineData("V1.2", "v1.2")]
+    [InlineData("alpha-1", "alpha-1")]
+    [InlineData("vk-285-117", "vk-285-117")]
+    [InlineData("01.000.070", "v01.000.070")]
+    [InlineData("", "")]
+    [InlineData(null, "")]
+    public void Format_AddsVOnlyToNumbers(string? version, string expected) =>
+        Assert.Equal(expected, VersionLabel.Format(version));
+}

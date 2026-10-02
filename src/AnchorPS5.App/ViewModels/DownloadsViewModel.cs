@@ -1,3 +1,4 @@
+using AnchorPS5.Core.Packages;
 using System.Collections.ObjectModel;
 using AnchorPS5.Core;
 using AnchorPS5.Core.Downloads;
@@ -30,7 +31,7 @@ public sealed partial class DownloadJobViewModel : ObservableObject
 
     public string Name => Job.App.Name;
 
-    public string VersionText => "v" + Job.Version;
+    public string VersionText => VersionLabel.Format(Job.Version);
 
     public string FileName => Job.File.FileName;
 

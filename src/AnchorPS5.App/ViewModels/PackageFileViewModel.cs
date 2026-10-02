@@ -51,8 +51,8 @@ public sealed partial class PackageFileViewModel : ObservableObject
         IsPs4 = AssetClassifier.DetectPlatform(FileName) == ConsolePlatform.PS4;
         IsBeta = status.Channel == FileChannel.Beta;
 
-        var mine = installed?.Version.Version;
-        var target = status.Target?.Version;
+        var mine = VersionLabel.Format(installed?.Version.Version);
+        var target = VersionLabel.Format(status.Target?.Version);
         StateText = (status.State, IsBeta) switch
         {
             (FileState.UpToDate, false) => localization.Format("file.upToDate", mine),
@@ -66,7 +66,7 @@ public sealed partial class PackageFileViewModel : ObservableObject
         };
         DownloadText = localization.Get(status.State == FileState.UpdateAvailable ? "action.updateFile" : "action.download");
         BetaOfferText = !status.BetaOffered ? string.Empty
-            : localization.Format(status.BetaDownloaded ? "file.betaOfferDownloaded" : "file.betaOffer", status.Beta!.Version);
+            : localization.Format(status.BetaDownloaded ? "file.betaOfferDownloaded" : "file.betaOffer", VersionLabel.Format(status.Beta!.Version));
         TryBetaText = localization.Get(status.BetaDownloaded ? "action.useBeta" : "action.tryBeta");
 
         var parts = new[] { Label, IsPs4 ? "PS4" : null, IsBeta ? "beta" : null, SizeText };
@@ -213,7 +213,7 @@ public sealed partial class FileVersionViewModel
         Installed = version;
         _open = open;
         _delete = delete;
-        VersionText = "v" + version.Version;
+        VersionText = VersionLabel.Format(version.Version);
         FolderPath = version.FolderPath;
 
         var file = version.Files.FirstOrDefault();

@@ -58,7 +58,7 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
         Description = entry.App.Description.IsEmpty
             ? localization.Get("detail.noDescription")
             : entry.App.Description.Get(localization.CurrentLanguage);
-        BetaText = package.BetaVersion is { } beta ? localization.Format("file.betaChip", beta) : string.Empty;
+        BetaText = package.BetaVersion is { } beta ? localization.Format("file.betaChip", VersionLabel.Format(beta)) : string.Empty;
         FilesTitle = package.DisplayVersion is { } v ? localization.Format("detail.filesTitle", v) : localization.Get("detail.filesTitleNoVersion");
         SetStatus(status);
     }
@@ -76,7 +76,7 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
 
     /// <summary>Versión publicada: la de GitHub o, si no hay, la del catálogo.</summary>
     public string Version => Package.DisplayVersion ?? Entry.App.Version;
-    public string VersionText => "v" + Version;
+    public string VersionText => VersionLabel.Format(Version);
     public bool HasVersion => !string.IsNullOrWhiteSpace(Version);
 
     public bool HasBeta => Package.BetaVersion is not null;
@@ -302,7 +302,7 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
                 "status.update",
                 updates.FirstOrDefault()?.Installed?.Version.Version ?? status.Latest?.Version,
                 updates.FirstOrDefault()?.Available?.Version ?? Version),
-            PackageState.Downloaded => _localization.Format("status.downloaded", status.Latest?.Version),
+            PackageState.Downloaded => _localization.Format("status.downloaded", VersionLabel.Format(status.Latest?.Version)),
             _ => _localization.Get("status.notDownloaded"),
         };
 

@@ -1,3 +1,4 @@
+using AnchorPS5.Core.Packages;
 using AnchorPS5.App.Controls;
 using AnchorPS5.App.ViewModels;
 using AnchorPS5.Core.Library;
@@ -90,7 +91,7 @@ public sealed partial class AppDetailPage : Page
             return;
         }
 
-        var versions = string.Join(", ", betas.Select(v => "v" + v.Version));
+        var versions = string.Join(", ", betas.Select(v => VersionLabel.Format(v.Version)));
         var content = new StackPanel { Spacing = 12 };
         content.Children.Add(new TextBlock { Text = Loc("dialog.backToStableText", file.FileName, versions), TextWrapping = TextWrapping.Wrap });
         var openLocation = new HyperlinkButton { Content = Loc("action.openBetaLocation"), Padding = new Thickness(0) };
@@ -136,7 +137,7 @@ public sealed partial class AppDetailPage : Page
         var alreadyDownloaded = file.BetaDownloaded && version == file.BetaVersion;
         content.Children.Add(new TextBlock
         {
-            Text = Loc(alreadyDownloaded ? "dialog.betaTextDownloaded" : "dialog.betaText", version, file.FileName),
+            Text = Loc(alreadyDownloaded ? "dialog.betaTextDownloaded" : "dialog.betaText", VersionLabel.Format(version), file.FileName),
             TextWrapping = TextWrapping.Wrap,
         });
         content.Children.Add(new TextBlock { Text = Loc("dialog.betaHowToReturn"), TextWrapping = TextWrapping.Wrap });
@@ -146,7 +147,7 @@ public sealed partial class AppDetailPage : Page
             XamlRoot = XamlRoot,
             Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
             RequestedTheme = ActualTheme,
-            Title = Loc(alreadyDownloaded ? "dialog.useBetaTitle" : "dialog.betaTitle", version),
+            Title = Loc(alreadyDownloaded ? "dialog.useBetaTitle" : "dialog.betaTitle", VersionLabel.Format(version)),
             Content = content,
             PrimaryButtonText = Loc(alreadyDownloaded ? "action.useBeta" : "action.tryBeta"),
             CloseButtonText = Loc("action.cancel"),
