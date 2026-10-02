@@ -14,6 +14,9 @@ public sealed partial class AboutPage : Page
         VersionText.Text = App.Localization.Format("app.versionBy", App.Version, "cheyen2008");
     }
 
+    private async void OnCheckUpdatesClick(object sender, RoutedEventArgs e) =>
+        await AppUpdateDialogs.CheckAsync(XamlRoot, ActualTheme, interactive: true);
+
     private void OnOpenLogsClick(object sender, RoutedEventArgs e)
     {
         if (AppLog.Directory is { } logs)

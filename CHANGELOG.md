@@ -35,6 +35,10 @@ Primera versión de prueba.
   en segundo plano y espera automática si se alcanza el límite.
 - **Botón Recargar** para ver al momento una versión recién publicada (sin sesión, avisa
   antes de que pueda gastar el límite de GitHub).
+- **Actualizaciones de la app:** al arrancar (y desde **Acerca de → Buscar
+  actualizaciones**) avisa de las versiones nuevas con sus novedades; **Actualizar ahora**
+  la descarga, comprueba su SHA-256 y la instala reiniciando la app, sin tocar tu
+  configuración ni tus descargas.
 - **Acerca de:** versión, licencia, enlaces, componentes de terceros, créditos y acceso al
   registro de la app (`config/logs`) para reportar fallos.
 - **Más robusta:** un `config.json` o un idioma mal escritos ya no cierran la app (se avisa

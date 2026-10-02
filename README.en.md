@@ -73,6 +73,10 @@ The first time, it asks for the language, the download folder (by default
 `Downloads\AnchorPS5_Downloads`) and, if you want, your GitHub account. It's a
 **portable** app: its settings live in the `config` folder next to the `.exe`.
 
+**Updates:** AnchorPS5 tells you on startup when there's a new version and updates itself
+with one click (**Update now**), keeping your settings and downloads. You can also check
+from **About → Check for updates**.
+
 ## Do I need to sign in to GitHub?
 
 No. AnchorPS5 works the same without a session:

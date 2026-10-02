@@ -159,6 +159,15 @@ public sealed partial class MainWindow : Window
             Orientation = Orientation.Horizontal,
             Children = { _shell.DownloadsIndicator, new AccountIndicator() },
         };
+
+        // Al arrancar se mira si hay versión nueva de AnchorPS5 (sin molestar si no la hay).
+        var shell = _shell;
+        shell.Loaded += async (_, _) =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(4));
+            if (shell.XamlRoot is { } root)
+                await AppUpdateDialogs.CheckAsync(root, Root.ActualTheme, interactive: false);
+        };
         ShowScreen(_shell);
     }
 
@@ -191,7 +200,11 @@ public sealed partial class MainWindow : Window
         if (_rightPaddingColumn is null)
             return;
 
-        var width = AppWindow.TitleBar.RightInset / root.RasterizationScale;
+        // Al cerrarse la ventana (p. ej. al actualizar) ya no hay AppWindow.
+        if (AppWindow?.TitleBar is not { } titleBar)
+            return;
+
+        var width = titleBar.RightInset / root.RasterizationScale;
         if (Math.Abs(_rightPaddingColumn.Width.Value - width) > 0.5)
             _rightPaddingColumn.Width = new GridLength(width);
     }

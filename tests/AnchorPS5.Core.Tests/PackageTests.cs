@@ -8,6 +8,7 @@ using AnchorPS5.Core.GitHub;
 using AnchorPS5.Core.Library;
 using AnchorPS5.Core.Models;
 using AnchorPS5.Core.Packages;
+using AnchorPS5.Core.Updates;
 
 namespace AnchorPS5.Core.Tests;
 
@@ -678,4 +679,78 @@ public sealed class VersionLabelTests
     [InlineData(null, "")]
     public void Format_AddsVOnlyToNumbers(string? version, string expected) =>
         Assert.Equal(expected, VersionLabel.Format(version));
+}
+
+public sealed class AppUpdatesTests
+{
+    private static GitHubRelease Release(string tag, bool prerelease = false, string zip = "AnchorPS5_{0}_2026-10-02_10-00.zip") => new()
+    {
+        TagName = tag,
+        Prerelease = prerelease,
+        HtmlUrl = $"https://github.com/Kuroge/AnchorPS5/releases/tag/{tag}",
+        Body = "Novedades",
+        Assets =
+        [
+            new GitHubAsset { Name = string.Format(zip, tag.TrimStart('v')), Size = 10, BrowserDownloadUrl = "https://x/app.zip", Digest = "sha256:abc" },
+            new GitHubAsset { Name = string.Format(zip, tag.TrimStart('v')) + ".sha256", BrowserDownloadUrl = "https://x/app.zip.sha256" },
+        ],
+    };
+
+    [Fact]
+    public void Alpha_IsOfferedTheNewestPrerelease()
+    {
+        var update = AppUpdates.FindUpdate(
+            [Release("v0.1.0-alpha.1", true), Release("v0.1.0-alpha.3", true), Release("v0.1.0-alpha.2", true)],
+            AppVersion.Parse("0.1.0-alpha.1"));
+
+        Assert.Equal("0.1.0-alpha.3", update!.Version.Raw);
+        Assert.Equal("abc", update.Sha256);
+        Assert.EndsWith(".sha256", update.Sha256Url);
+    }
+
+    [Fact]
+    public void Stable_IsNotOfferedPrereleases()
+    {
+        var update = AppUpdates.FindUpdate([Release("v1.1.0-beta.1", true), Release("v1.0.1")], AppVersion.Parse("1.0.0"));
+
+        Assert.Equal("1.0.1", update!.Version.Raw);
+    }
+
+    [Fact]
+    public void NothingNewer_OrWithoutZip_IsNoUpdate()
+    {
+        Assert.Null(AppUpdates.FindUpdate([Release("v0.1.0-alpha.1", true)], AppVersion.Parse("0.1.0-alpha.1")));
+        Assert.Null(AppUpdates.FindUpdate([Release("v0.2.0", zip: "otra-cosa-{0}.zip")], AppVersion.Parse("0.1.0")));
+    }
+
+    [Fact]
+    public async Task DownloadAndStage_VerifiesAndExtracts_WithoutConfig()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "AnchorPS5Tests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var source = Path.Combine(root, "src");
+            Directory.CreateDirectory(Path.Combine(source, "config"));
+            File.WriteAllText(Path.Combine(source, AppUpdates.ExecutableName), "exe");
+            File.WriteAllText(Path.Combine(source, "config", "config.json"), "{}");
+            var zip = Path.Combine(root, "AnchorPS5_0.2.0_x.zip");
+            System.IO.Compression.ZipFile.CreateFromDirectory(source, zip);
+            var sha = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(zip)));
+            var update = new AppUpdate(AppVersion.Parse("0.2.0"), null, null, new Uri(zip).AbsoluteUri, "AnchorPS5_0.2.0_x.zip", 0, sha, null);
+
+            var app = await AppUpdates.DownloadAndStageAsync(new HttpClient(), update, Path.Combine(root, "staging"));
+
+            Assert.True(File.Exists(Path.Combine(app, AppUpdates.ExecutableName)));
+            Assert.False(Directory.Exists(Path.Combine(app, "config")));
+
+            var bad = update with { Sha256 = "0000" };
+            var error = await Assert.ThrowsAsync<AppUpdateException>(() => AppUpdates.DownloadAndStageAsync(new HttpClient(), bad, Path.Combine(root, "staging2")));
+            Assert.Equal(AppUpdateError.Verification, error.Error);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
 }

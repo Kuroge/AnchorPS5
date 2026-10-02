@@ -116,6 +116,22 @@ public partial class App : Application
         _window.Activate();
     }
 
+    /// <summary>Repo de AnchorPS5: sus releases son las actualizaciones de la app.</summary>
+    public static readonly GitHubRepoRef AppRepo = new("Kuroge", "AnchorPS5");
+
+    /// <summary>
+    /// Releases de la propia app (de GitHub, o de config.updateFeed para pruebas). Null si no
+    /// se han podido consultar.
+    /// </summary>
+    public static async Task<IReadOnlyList<GitHubRelease>?> GetAppReleasesAsync(bool forceRefresh)
+    {
+        if (Config.UpdateFeed is { Length: > 0 } feed)
+            return AnchorPS5.Core.Updates.AppUpdates.ReadFeed(feed);
+
+        var result = await GitHub.GetReleasesAsync(AppRepo, forceRefresh);
+        return result.Status is GitHubStatus.Ok or GitHubStatus.FromCache ? result.Value : null;
+    }
+
     /// <summary>
     /// Primer arranque: el catálogo oficial y su índice que viajan con la app (carpeta
     /// "catalog" junto al exe) se usan hasta que se pueda descargar la versión al día.

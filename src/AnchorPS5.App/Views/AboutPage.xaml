@@ -33,6 +33,15 @@
                         <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="AnchorPS5" />
                         <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{l:Loc Key=app.tagline}" />
                         <TextBlock x:Name="VersionText" Foreground="{ThemeResource AnchorBlueBrush}" />
+                        <Button
+                            Margin="0,8,0,0"
+                            AutomationProperties.Name="{l:Loc Key=update.check}"
+                            Click="OnCheckUpdatesClick">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="&#xE895;" />
+                                <TextBlock Text="{l:Loc Key=update.check}" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -71,7 +80,11 @@
                             Style="{StaticResource SecondaryTextStyle}"
                             Text="{l:Loc Key=about.problemsText}"
                             TextWrapping="Wrap" />
-                        <Button Grid.Column="1" VerticalAlignment="Center" Click="OnOpenLogsClick">
+                        <Button
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="{l:Loc Key=about.openLogs}"
+                            Click="OnOpenLogsClick">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon FontSize="14" Glyph="&#xE838;" />
                                 <TextBlock Text="{l:Loc Key=about.openLogs}" />

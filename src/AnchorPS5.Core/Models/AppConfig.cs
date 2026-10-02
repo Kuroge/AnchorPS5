@@ -22,6 +22,12 @@ public sealed class AppConfig
 
     /// <summary>Última introVersion vista (0 = nunca).</summary>
     public int IntroSeenVersion { get; set; }
+
+    /// <summary>
+    /// Opcional, para pruebas: ruta (o file://) a un fichero con releases en el formato de la
+    /// API de GitHub. Si está, las actualizaciones de la app se buscan ahí en vez de en GitHub.
+    /// </summary>
+    public string? UpdateFeed { get; set; }
 }
 
 public enum AppTheme

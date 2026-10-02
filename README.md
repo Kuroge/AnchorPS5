@@ -73,6 +73,10 @@ La primera vez te pide el idioma, la carpeta de descargas (por defecto
 `Descargas\AnchorPS5_Downloads`) y, si quieres, tu cuenta de GitHub. Es una app
 **portable**: su configuración vive en la carpeta `config` junto al `.exe`.
 
+**Actualizaciones:** AnchorPS5 avisa al arrancar cuando hay una versión nueva y se
+actualiza con un clic (**Actualizar ahora**), conservando tu configuración y tus
+descargas. También puedes buscarlas en **Acerca de → Buscar actualizaciones**.
+
 ## ¿Hace falta iniciar sesión en GitHub?
 
 No. AnchorPS5 funciona igual sin sesión:

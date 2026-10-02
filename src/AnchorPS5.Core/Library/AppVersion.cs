@@ -22,6 +22,9 @@ public sealed class AppVersion : IComparable<AppVersion>, IEquatable<AppVersion>
 
     public bool IsNumeric => _numbers.Length > 0;
 
+    /// <summary>Versión preliminar ("1.0.0-alpha.1", "2.0-beta"…).</summary>
+    public bool IsPrerelease => _preRelease.Length > 0;
+
     public static AppVersion Parse(string? text)
     {
         var raw = (text ?? string.Empty).Trim();
@@ -118,4 +121,8 @@ public sealed class AppVersion : IComparable<AppVersion>, IEquatable<AppVersion>
 
     public static bool operator >(AppVersion a, AppVersion b) => a.CompareTo(b) > 0;
     public static bool operator <(AppVersion a, AppVersion b) => a.CompareTo(b) < 0;
+
+    public static bool operator >=(AppVersion a, AppVersion b) => a.CompareTo(b) >= 0;
+
+    public static bool operator <=(AppVersion a, AppVersion b) => a.CompareTo(b) <= 0;
 }

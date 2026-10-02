@@ -35,6 +35,9 @@ First test version.
   waiting when the limit is reached.
 - **Reload button** to see a just-published version right away (without a session, it
   warns first that it may use up the GitHub limit).
+- **App updates:** on startup (and from **About → Check for updates**) it lets you know
+  about new versions with their changes; **Update now** downloads it, checks its SHA-256
+  and installs it restarting the app, without touching your settings or downloads.
 - **About:** version, license, links, third-party components, credits and access to the
   app log (`config/logs`) to report bugs.
 - **Sturdier:** a badly written `config.json` or language file no longer closes the app
