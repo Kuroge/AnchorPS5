@@ -5,6 +5,7 @@ using AnchorPS5.Core.Models;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.Storage.Pickers;
 using Windows.Graphics;
 
@@ -21,6 +22,7 @@ public sealed partial class MainWindow : Window
     private const int MinWindowWidth = 720, MinWindowHeight = 540;
 
     private ShellPage? _shell;
+    private ColumnDefinition? _rightPaddingColumn;
 
     public MainWindow()
     {
@@ -40,6 +42,7 @@ public sealed partial class MainWindow : Window
         // Contenido bajo la barra de título, con el control TitleBar de WinUI.
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+        AppTitleBar.LayoutUpdated += (_, _) => FixTitleBarRightPadding();
 
         // Tamaño inicial escalado según los PPP, centrado y sin salirse de la pantalla.
         var scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
@@ -116,10 +119,12 @@ public sealed partial class MainWindow : Window
     private void ShowShell()
     {
         _shell = new ShellPage();
-        _shell.CanGoBackChanged += (_, canGoBack) => AppTitleBar.IsBackButtonEnabled = canGoBack;
-        AppTitleBar.IsBackButtonVisible = true;
-        AppTitleBar.IsBackButtonEnabled = false;
+        // El botón atrás solo se ve cuando hay a dónde volver.
+        _shell.CanGoBackChanged += (_, canGoBack) => AppTitleBar.IsBackButtonVisible = canGoBack;
+        AppTitleBar.IsBackButtonVisible = false;
+        AppTitleBar.IsBackButtonEnabled = true;
         AppTitleBar.IsPaneToggleButtonVisible = true;
+        // Descargas a la derecha del todo, pegado a los botones de la ventana.
         AppTitleBar.RightHeader = _shell.DownloadsIndicator;
         ShowScreen(_shell);
     }
@@ -135,6 +140,27 @@ public sealed partial class MainWindow : Window
         }
 
         ScreenHost.Content = screen;
+    }
+
+    /// <summary>
+    /// El TitleBar reserva el hueco de los botones de la ventana en píxeles físicos sin
+    /// aplicar la escala (a 150 % deja 69 px de más). Se corrige la columna a su ancho real.
+    /// </summary>
+    private void FixTitleBarRightPadding()
+    {
+        if (AppTitleBar.XamlRoot is not { RasterizationScale: > 0 } root)
+            return;
+
+        _rightPaddingColumn ??= VisualTreeHelper.GetChildrenCount(AppTitleBar) > 0
+            && VisualTreeHelper.GetChild(AppTitleBar, 0) is FrameworkElement templateRoot
+                ? templateRoot.FindName("RightPaddingColumn") as ColumnDefinition
+                : null;
+        if (_rightPaddingColumn is null)
+            return;
+
+        var width = AppWindow.TitleBar.RightInset / root.RasterizationScale;
+        if (Math.Abs(_rightPaddingColumn.Width.Value - width) > 0.5)
+            _rightPaddingColumn.Width = new GridLength(width);
     }
 
     private void OnTitleBarBackRequested(TitleBar sender, object args) => _shell?.GoBack();

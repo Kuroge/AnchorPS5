@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using AnchorPS5.Core;
 using AnchorPS5.Core.Catalog;
+using AnchorPS5.Core.GitHub;
 using AnchorPS5.Core.Library;
 using AnchorPS5.Core.Localization;
 using AnchorPS5.Core.Models;
@@ -69,7 +70,6 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
     public string Name => Entry.App.Name;
     public string Author => Entry.App.Author;
     public string Description { get; }
-    public string SourceName => Entry.Source.Name;
     public string FilesTitle { get; }
 
     /// <summary>Versión publicada: la de GitHub o, si no hay, la del catálogo.</summary>
@@ -86,13 +86,27 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
 
     public bool HasReleaseUrl => Package.ReleaseUrl is not null;
 
+    /// <summary>Repo de GitHub de la app (si lo tiene).</summary>
+    public GitHubRepoRef? Repo => GitHubRepoRef.TryParse(Entry.App.Repo, out var repo) ? repo : null;
+
+    public bool HasRepo => Repo is not null;
+
+    /// <summary>https://github.com/owner/repo</summary>
+    public Uri? RepoUrl => Repo is { } r ? new Uri($"https://github.com/{r.Owner}/{r.Name}") : null;
+
+    public string RepoText => Repo?.ToString() ?? "—";
+
+    /// <summary>Perfil de GitHub del autor (el dueño del repo).</summary>
+    public Uri? AuthorUrl => Repo is { } r ? new Uri($"https://github.com/{r.Owner}") : null;
+
+    public bool HasAuthorUrl => AuthorUrl is not null;
+    public bool HasNoAuthorUrl => AuthorUrl is null;
+
     /// <summary>"owner/repo · v1.2" o, sin GitHub, un guion.</summary>
     public string ReleaseLinkText => Package.ReleaseUrl is { } url
         ? url.AbsolutePath.Trim('/').Replace("/releases/tag/", " · ")
         : "—";
 
-    /// <summary>Glifo de la fuente: nube si es remota, carpeta si es local.</summary>
-    public string SourceGlyph => Entry.Source.Type == SourceType.Remote ? "\uE753" : "\uE8B7";
 
     /// <summary>Carpeta de la app dentro de la de descargas.</summary>
     public string AppFolder { get; }

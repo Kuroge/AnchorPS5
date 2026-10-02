@@ -18,6 +18,11 @@
             IsBackButtonVisible="False"
             IsPaneToggleButtonVisible="False"
             PaneToggleRequested="OnTitleBarPaneToggleRequested">
+            <TitleBar.Resources>
+                <!-- Descargas pegado a los botones de la ventana: sin hueco extra de arrastre
+                     (el centro de la barra ya queda libre para arrastrar). -->
+                <x:Double x:Key="TitleBarMinDragRegionWidth">0</x:Double>
+            </TitleBar.Resources>
             <TitleBar.LeftHeader>
                 <c:AnchorMark
                     Width="18"

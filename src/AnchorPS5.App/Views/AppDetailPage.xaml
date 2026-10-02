@@ -81,13 +81,34 @@
                             Style="{StaticResource TitleLargeTextBlockStyle}"
                             Text="{x:Bind Item.Name}"
                             TextWrapping="Wrap" />
+                        <!-- Autor: enlace a su perfil de GitHub (si la app viene de GitHub) -->
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon
                                 FontSize="14"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Glyph="&#xE77B;" />
-                            <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind Item.Author}" />
+                            <HyperlinkButton
+                                Padding="0"
+                                AutomationProperties.Name="{x:Bind Item.Author}"
+                                Content="{x:Bind Item.Author}"
+                                NavigateUri="{x:Bind Item.AuthorUrl}"
+                                ToolTipService.ToolTip="{x:Bind Item.AuthorUrl}"
+                                Visibility="{x:Bind Item.HasAuthorUrl}" />
+                            <TextBlock
+                                Style="{StaticResource SecondaryTextStyle}"
+                                Text="{x:Bind Item.Author}"
+                                Visibility="{x:Bind Item.HasNoAuthorUrl}" />
                         </StackPanel>
+
+                        <!-- Descripción -->
+                        <TextBlock
+                            MaxWidth="720"
+                            HorizontalAlignment="Left"
+                            IsTextSelectionEnabled="True"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            Text="{x:Bind Item.Description}"
+                            TextWrapping="Wrap" />
+
                         <StackPanel
                             Margin="0,4,0,0"
                             Orientation="Horizontal"
@@ -127,15 +148,6 @@
                                         Foreground="{ThemeResource BetaBrush}"
                                         Glyph="&#xE7BA;" />
                                     <TextBlock Foreground="{ThemeResource BetaBrush}" Text="{x:Bind Item.BetaText}" />
-                                </StackPanel>
-                            </Border>
-                            <Border Background="{ThemeResource AnchorGoldTintBrush}" Style="{StaticResource ChipStyle}">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <FontIcon
-                                        FontSize="12"
-                                        Foreground="{ThemeResource AnchorGoldBrush}"
-                                        Glyph="{x:Bind Item.SourceGlyph}" />
-                                    <TextBlock Foreground="{ThemeResource AnchorGoldBrush}" Text="{x:Bind Item.SourceName}" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -503,15 +515,6 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- Descripción -->
-            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{l:Loc Key=detail.descriptionTitle}" />
-            <Border Margin="0,0,0,16" Style="{StaticResource CardStyle}">
-                <TextBlock
-                    IsTextSelectionEnabled="True"
-                    Style="{StaticResource BodyTextBlockStyle}"
-                    Text="{x:Bind Item.Description}" />
-            </Border>
-
             <!-- Información -->
             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{l:Loc Key=detail.informationTitle}" />
             <Border Style="{StaticResource CardStyle}">
@@ -526,7 +529,19 @@
 
                     <FontIcon Grid.Row="1" Glyph="&#xE77B;" Style="{StaticResource InfoIconStyle}" />
                     <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.author}" />
-                    <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.Author}" />
+                    <HyperlinkButton
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        Padding="0"
+                        Content="{x:Bind Item.Author}"
+                        NavigateUri="{x:Bind Item.AuthorUrl}"
+                        Visibility="{x:Bind Item.HasAuthorUrl}" />
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        Style="{StaticResource InfoValueStyle}"
+                        Text="{x:Bind Item.Author}"
+                        Visibility="{x:Bind Item.HasNoAuthorUrl}" />
 
                     <FontIcon Grid.Row="2" Glyph="&#xE71B;" Style="{StaticResource InfoIconStyle}" />
                     <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.release}" />
@@ -538,9 +553,15 @@
                         IsEnabled="{x:Bind Item.HasReleaseUrl}"
                         NavigateUri="{x:Bind Item.Package.ReleaseUrl}" />
 
-                    <FontIcon Grid.Row="3" Glyph="{x:Bind Item.SourceGlyph}" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.source}" />
-                    <TextBlock Grid.Row="3" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.SourceName}" />
+                    <FontIcon Grid.Row="3" Glyph="&#xE8F1;" Style="{StaticResource InfoIconStyle}" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.github}" />
+                    <HyperlinkButton
+                        Grid.Row="3"
+                        Grid.Column="2"
+                        Padding="0"
+                        Content="{x:Bind Item.RepoText}"
+                        IsEnabled="{x:Bind Item.HasRepo}"
+                        NavigateUri="{x:Bind Item.RepoUrl}" />
 
                     <FontIcon Grid.Row="4" Glyph="&#xE943;" Style="{StaticResource InfoIconStyle}" />
                     <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.id}" />
