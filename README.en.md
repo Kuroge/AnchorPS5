@@ -1,10 +1,30 @@
+<div align="center">
+
+<img src="docs/logo.png" width="128" alt="AnchorPS5 logo" />
+
 # AnchorPS5
+
+### The homebrew store for your PS5
+
+[![Version](https://img.shields.io/badge/version-0.1.0--alpha.1-F2C14E?style=for-the-badge)](CHANGELOG.en.md)
+[![Windows 10 | 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0070D1?style=for-the-badge&logo=windows11&logoColor=white)](#requirements)
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![License GPL v3](https://img.shields.io/badge/license-GPL%20v3-0070D1?style=for-the-badge)](LICENSE)
+
+**[⬇️ Download](https://github.com/Kuroge/AnchorPS5/releases)** ·
+**[📋 Changelog](CHANGELOG.en.md)** ·
+**[📚 Catalog](https://github.com/Kuroge/AnchorPS5-catalog)** ·
+**[🌍 Translate](#translating-anchorps5)**
 
 [Español](README.md) · **English**
 
-**The homebrew store for your PS5.** AnchorPS5 is a Windows desktop app that gathers PS5
-homebrew into a catalog, downloads it already verified and lets you know when new
-versions are out. Like F-Droid or the Wii Homebrew Browser, but for PS5.
+</div>
+
+---
+
+AnchorPS5 is a Windows desktop app that gathers PS5 homebrew into a catalog, downloads
+it already verified and lets you know when new versions are out. Like F-Droid or the Wii
+Homebrew Browser, but for PS5.
 
 > ⚠️ **Alpha version.** It works, but it's still in development and may change a lot
 > from one version to the next. See the [changelog](CHANGELOG.en.md).
@@ -83,7 +103,7 @@ doesn't depend on the UI and has its own tests.
 
 ## Credits
 
-- Author: **cheyen2008**.
+- Author: **cheyen2008** ([Kuroge](https://github.com/Kuroge)).
 - [7-Zip](https://www.7-zip.org/) by Igor Pavlov (GNU LGPL), bundled to extract
   packages. Its license is in `tools\7zip\License.txt`.
 - [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) and
