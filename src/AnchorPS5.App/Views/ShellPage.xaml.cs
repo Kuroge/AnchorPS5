@@ -39,7 +39,11 @@ public sealed partial class ShellPage : Page
             App.Channels,
             downloads,
             App.PackageResolver,
-            () => App.GitHubSession.IsSignedIn);
+            () => App.GitHubSession.IsSignedIn,
+            App.OfficialSync)
+        {
+            AskOfficialUpdate = AskOfficialUpdateAsync,
+        };
         _catalog.PropertyChanged += OnCatalogPropertyChanged;
 
         // Refresco automático: cada minuto se comprueba si toca (caché caducada o fin del
@@ -109,6 +113,54 @@ public sealed partial class ShellPage : Page
     {
         badge.Value = count;
         badge.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>Catálogo oficial nuevo con apps propias: conservarlas, sustituir o más tarde.</summary>
+    private async Task<OfficialSyncChoice?> AskOfficialUpdateAsync(OfficialSyncResult update)
+    {
+        // En el primer arranque se pregunta antes de que la página esté en la ventana.
+        if (XamlRoot is null)
+        {
+            var loaded = new TaskCompletionSource();
+            Loaded += (_, _) => loaded.TrySetResult();
+            await loaded.Task;
+        }
+
+        var names = string.Join(", ", update.CustomApps.Select(a => a.Name));
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+            RequestedTheme = ActualTheme,
+            Title = App.Localization.Get("official.updateTitle"),
+            Content = new TextBlock
+            {
+                Text = App.Localization.Format(update.CustomApps.Count == 1 ? "official.updateTextOne" : "official.updateTextMany", update.CustomApps.Count, names),
+                TextWrapping = TextWrapping.Wrap,
+            },
+            PrimaryButtonText = App.Localization.Get("official.keepMine"),
+            SecondaryButtonText = App.Localization.Get("official.replace"),
+            CloseButtonText = App.Localization.Get("official.later"),
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        // Tres botones de texto largo: el ancho por defecto los corta.
+        dialog.Resources["ContentDialogMaxWidth"] = 980d;
+        dialog.Resources["ContentDialogMinWidth"] = 920d;
+
+        try
+        {
+            return await dialog.ShowAsync() switch
+            {
+                ContentDialogResult.Primary => OfficialSyncChoice.KeepMine,
+                ContentDialogResult.Secondary => OfficialSyncChoice.ReplaceAll,
+                _ => null,
+            };
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or System.Runtime.InteropServices.COMException)
+        {
+            // Ya hay otro diálogo abierto: se pregunta en el siguiente refresco.
+            return null;
+        }
     }
 
     private void RefreshIfDue()

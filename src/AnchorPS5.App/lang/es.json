@@ -69,6 +69,13 @@
   "file.versionsTitle": "Versiones descargadas",
   "file.noVersions": "Todavía no has descargado este fichero.",
 
+  "official.updateTitle": "Hay una versión nueva del catálogo oficial",
+  "official.updateTextOne": "Tienes 1 app añadida por ti ({1}). ¿Quieres conservarla junto al catálogo nuevo o sustituir todo por la versión oficial? Si has cambiado a mano alguna app oficial, se usará la versión oficial.",
+  "official.updateTextMany": "Tienes {0} apps añadidas por ti ({1}). ¿Quieres conservarlas junto al catálogo nuevo o sustituir todo por la versión oficial? Si has cambiado a mano alguna app oficial, se usará la versión oficial.",
+  "official.keepMine": "Actualizar y conservar mis apps",
+  "official.replace": "Sustituir por la versión oficial",
+  "official.later": "Más tarde",
+
   "github.title": "GitHub",
   "github.rateLimited": "Se ha alcanzado el límite de consultas a GitHub. Se muestran los últimos datos guardados.",
   "github.rateLimitedUntil": "Se ha alcanzado el límite de consultas a GitHub hasta las {0}. Se muestran los últimos datos guardados.",
@@ -105,6 +112,7 @@
   "detail.copy": "Copiar",
   "detail.copied": "Copiado",
   "detail.version": "Versión",
+  "detail.betaVersion": "Versión beta",
   "detail.author": "Autor",
   "detail.size": "Tamaño",
   "detail.id": "Identificador",
@@ -114,6 +122,9 @@
   "detail.filesTitleNoVersion": "Archivos",
   "detail.release": "Último release",
   "detail.github": "GitHub",
+  "detail.origin": "Origen",
+  "origin.official": "Catálogo oficial",
+  "origin.custom": "Añadida por ti",
 
   "action.download": "Descargar",
   "action.update": "Actualizar a v{0}",

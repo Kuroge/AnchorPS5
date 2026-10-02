@@ -22,7 +22,7 @@ public static class CatalogSearch
         var app = entry.App;
         return Contains(app.Name, term)
             || Contains(app.Author, term)
-            || Contains(app.Description, term)
+            || app.Description.AllValues.Any(text => Contains(text, term))
             || Contains(app.Id, term);
     }
 

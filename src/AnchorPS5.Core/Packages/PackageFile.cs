@@ -1,3 +1,5 @@
+using AnchorPS5.Core.Models;
+
 namespace AnchorPS5.Core.Packages;
 
 public enum ConsolePlatform
@@ -20,8 +22,8 @@ public sealed record PackageFile(
     string Version,
     bool IsPrerelease,
     ConsolePlatform Platform,
-    string? Label = null,
-    string? Description = null,
+    LocalizedText? Label = null,
+    LocalizedText? Description = null,
     int Order = int.MaxValue,
     DateTimeOffset? ReleasedAt = null);
 

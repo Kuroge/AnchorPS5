@@ -19,13 +19,16 @@ public sealed class ConfigService
     public static string DefaultDownloadPath =>
         Path.Combine(KnownFolders.GetDownloadsPath(), DownloadsSubfolder);
 
+    /// <summary>Catálogo oficial: fichero publicado del repo (no gasta cupo de la API de GitHub).</summary>
+    public const string OfficialCatalogUrl = "https://raw.githubusercontent.com/Kuroge/AnchorPS5-catalog/main/catalog.json";
+
     public static AppConfig CreateDefault(string language = "es") => new()
     {
         Language = language,
         DownloadPath = DefaultDownloadPath,
         Sources =
         [
-            new Source { Name = "Catálogo local", Type = SourceType.Local, Path = "catalog.json", Enabled = true },
+            new Source { Name = "Catálogo oficial", Type = SourceType.Official, Url = OfficialCatalogUrl, Path = "catalog.json", Enabled = true },
         ],
     };
 

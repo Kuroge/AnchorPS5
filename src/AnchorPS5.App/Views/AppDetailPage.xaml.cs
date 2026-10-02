@@ -1,3 +1,4 @@
+using AnchorPS5.App.Controls;
 using AnchorPS5.App.ViewModels;
 using AnchorPS5.Core.Library;
 using Microsoft.UI.Xaml;
@@ -11,7 +12,6 @@ namespace AnchorPS5.App.Views;
 public sealed partial class AppDetailPage : Page
 {
     private const string DownloadGlyph = "\uE896";
-    private const string WarningGlyph = "\uE7BA";
     private const string CheckGlyph = "\uE73E";
 
     public AppDetailPage()
@@ -39,7 +39,9 @@ public sealed partial class AppDetailPage : Page
             var option = new MenuFlyoutItem
             {
                 Text = file.MenuText,
-                Icon = new FontIcon { Glyph = file.IsUpToDate ? CheckGlyph : file.IsBeta ? WarningGlyph : DownloadGlyph },
+                Icon = file.IsBeta && !file.IsUpToDate
+                    ? BetaIcon.CreateIcon()
+                    : new FontIcon { Glyph = file.IsUpToDate ? CheckGlyph : DownloadGlyph },
                 IsEnabled = !file.IsUpToDate && !file.IsBusy,
             };
             if (file.IsBeta && !file.IsUpToDate && Application.Current.Resources.TryGetValue("BetaBrush", out var beta))

@@ -22,6 +22,10 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
     private readonly DownloadsViewModel _downloads;
     private readonly PackageResolver _resolver;
     private readonly Func<bool> _isSignedIn;
+    private readonly OfficialCatalogSync _officialSync;
+
+    // Versiones oficiales que el usuario ha dejado para "más tarde" en esta sesión.
+    private readonly HashSet<string> _postponedOfficial = [];
 
     // Nuevas en esta sesión: se mantienen aunque se recargue.
     private readonly HashSet<string> _newIds = new(StringComparer.OrdinalIgnoreCase);
@@ -37,8 +41,10 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         ChannelPreferences channels,
         DownloadsViewModel downloads,
         PackageResolver resolver,
-        Func<bool> isSignedIn)
+        Func<bool> isSignedIn,
+        OfficialCatalogSync officialSync)
     {
+        _officialSync = officialSync;
         _isSignedIn = isSignedIn;
         _resolver = resolver;
         _loader = loader;
@@ -87,7 +93,11 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
     public partial int DownloadedCount { get; private set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanUpdateAll))]
     public partial int UpdatesCount { get; private set; }
+
+    /// <summary>En la sección Actualizaciones, con alguna pendiente: botón "Actualizar todo".</summary>
+    public bool CanUpdateAll => Filter == CatalogFilter.Updates && UpdatesCount > 0;
 
     [ObservableProperty]
     public partial int NewCount { get; private set; }
@@ -137,8 +147,17 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
 
     partial void OnSortIndexChanged(int value) => ApplyFilter();
 
+    /// <summary>Actualiza todos los ficheros desactualizados de todas las apps.</summary>
+    [RelayCommand]
+    private void UpdateAllApps()
+    {
+        foreach (var item in _all.Where(i => i.HasUpdate).ToList())
+            item.UpdateAllCommand.Execute(null);
+    }
+
     partial void OnFilterChanged(CatalogFilter value)
     {
+        OnPropertyChanged(nameof(CanUpdateAll));
         Title = _localization.Get(value switch
         {
             CatalogFilter.Downloaded => "nav.downloaded",
@@ -196,10 +215,48 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         CatalogLoadResult Result,
         ResolvedPackage[] Packages,
         LibrarySnapshot Library,
-        IReadOnlyDictionary<string, FileChannel>[] Channels);
+        IReadOnlyDictionary<string, FileChannel>[] Channels,
+        AppOrigin[] Origins);
+
+    /// <summary>
+    /// Pregunta qué hacer cuando llega un catálogo oficial nuevo y hay apps propias
+    /// (null = más tarde). Lo asigna la vista.
+    /// </summary>
+    public Func<OfficialSyncResult, Task<OfficialSyncChoice?>>? AskOfficialUpdate { get; set; }
+
+    /// <summary>Descarga los catálogos oficiales y actualiza las copias locales antes de leerlas.</summary>
+    private async Task SyncOfficialAsync()
+    {
+        foreach (var source in _sources.Where(s => s.Enabled && s.Type == SourceType.Official))
+        {
+            var result = await _officialSync.CheckAsync(source);
+            if (result.State != OfficialSyncState.NeedsDecision
+                || _postponedOfficial.Contains(result.PendingHash!)
+                || AskOfficialUpdate is null)
+                continue;
+
+            if (await AskOfficialUpdate(result) is { } choice)
+            {
+                try
+                {
+                    await Task.Run(() => _officialSync.Apply(result, choice));
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Se volverá a ofrecer en el próximo refresco.
+                }
+            }
+            else
+            {
+                _postponedOfficial.Add(result.PendingHash!);
+            }
+        }
+    }
 
     private async Task<LoadedData> FetchAsync()
     {
+        await SyncOfficialAsync();
+
         var loadCatalog = _loader.LoadAllAsync(_sources);
         var scanLibrary = Task.Run(_library.Scan);
         var result = await loadCatalog;
@@ -209,20 +266,34 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         var library = await scanLibrary;
         _newIds.UnionWith(await Task.Run(() => _seenApps.RegisterAndGetNew(result.Entries.Select(e => e.App.Id))));
         var appChannels = await Task.Run(() => result.Entries.Select(e => _channels.GetForApp(e.App.Id)).ToArray());
-        return new LoadedData(result, packages, library, appChannels);
+        var origins = await Task.Run(() =>
+        {
+            var lastOfficial = _sources
+                .Where(s => s.Enabled && s.Type == SourceType.Official)
+                .ToDictionary(s => s, _officialSync.ReadLastOfficial);
+            return result.Entries
+                .Select(e => OfficialCatalogSync.GetOrigin(e, lastOfficial.GetValueOrDefault(e.Source)))
+                .ToArray();
+        });
+        return new LoadedData(result, packages, library, appChannels, origins);
     }
 
     private bool SamePackages(LoadedData data) =>
         data.Packages.Length == _all.Count
         && _all.Select((item, i) =>
-                string.Equals(item.Id, data.Result.Entries[i].App.Id, StringComparison.OrdinalIgnoreCase)
+                SameEntry(item.Entry.App, data.Result.Entries[i].App)
                 && item.Package.ReleaseUrl == data.Packages[i].ReleaseUrl
                 && item.Package.Files.SequenceEqual(data.Packages[i].Files))
             .All(same => same);
 
+    // Cualquier cambio en la entrada del catálogo (descripción, icono, reglas…) cuenta.
+    private static bool SameEntry(HomebrewApp a, HomebrewApp b) =>
+        System.Text.Json.JsonSerializer.Serialize(a, AnchorPS5.Core.Configuration.JsonDefaults.Options)
+        == System.Text.Json.JsonSerializer.Serialize(b, AnchorPS5.Core.Configuration.JsonDefaults.Options);
+
     private void Apply(LoadedData data)
     {
-        var (result, packages, library, appChannels) = data;
+        var (result, packages, library, appChannels, _) = data;
 
         _all = result.Entries
             .Select((e, i) => new CatalogItemViewModel(
@@ -233,7 +304,8 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
                 PackageStatus.Compute(packages[i], library.GetVersions(e.App), appChannels[i]),
                 _newIds.Contains(e.App.Id),
                 _library.GetAppFolder(e.App),
-                key => _library.GetFileFolder(e.App, key)))
+                key => _library.GetFileFolder(e.App, key),
+                data.Origins[i]))
             .ToList();
 
         // Descargas que siguen en marcha (o fallidas) tras recargar.

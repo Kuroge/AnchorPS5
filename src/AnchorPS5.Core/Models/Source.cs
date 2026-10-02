@@ -7,10 +7,10 @@ public sealed class Source
 
     public SourceType Type { get; set; } = SourceType.Local;
 
-    /// <summary>Solo para <see cref="SourceType.Local"/>; relativa a config/ o absoluta.</summary>
+    /// <summary>Para <see cref="SourceType.Local"/> y <see cref="SourceType.Official"/> (copia local); relativa a config/ o absoluta.</summary>
     public string? Path { get; set; }
 
-    /// <summary>Solo para <see cref="SourceType.Remote"/>.</summary>
+    /// <summary>Para <see cref="SourceType.Remote"/> y <see cref="SourceType.Official"/> (original).</summary>
     public string? Url { get; set; }
 
     public bool Enabled { get; set; } = true;
@@ -20,4 +20,9 @@ public enum SourceType
 {
     Local,
     Remote,
+    /// <summary>
+    /// Catálogo oficial: <see cref="Source.Url"/> es el original (repo) y
+    /// <see cref="Source.Path"/> la copia local que se lee (por defecto catalog.json).
+    /// </summary>
+    Official,
 }

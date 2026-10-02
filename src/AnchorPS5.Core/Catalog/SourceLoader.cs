@@ -46,7 +46,7 @@ public sealed class SourceLoader
     {
         return source.Type switch
         {
-            SourceType.Local => await LoadLocalAsync(source, cancellationToken),
+            SourceType.Local or SourceType.Official => await LoadLocalAsync(source, cancellationToken),
             SourceType.Remote => await LoadRemoteAsync(source, cancellationToken),
             _ => Failed(source, SourceErrorKind.InvalidSource),
         };
@@ -54,13 +54,14 @@ public sealed class SourceLoader
 
     private async Task<SourceLoadResult> LoadLocalAsync(Source source, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(source.Path))
+        var path = source.Type == SourceType.Official && string.IsNullOrWhiteSpace(source.Path) ? "catalog.json" : source.Path;
+        if (string.IsNullOrWhiteSpace(path))
             return Failed(source, SourceErrorKind.InvalidSource);
 
         string fullPath;
         try
         {
-            fullPath = Path.GetFullPath(source.Path, _configDirectory);
+            fullPath = Path.GetFullPath(path, _configDirectory);
         }
         catch (ArgumentException)
         {

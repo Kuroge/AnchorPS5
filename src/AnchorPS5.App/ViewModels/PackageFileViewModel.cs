@@ -44,9 +44,9 @@ public sealed partial class PackageFileViewModel : ObservableObject
         var shown = status.Available;
         var installed = status.Installed;
         FileName = shown?.FileName ?? installed?.File.FileName ?? status.Key;
-        Label = shown?.Label ?? FileName;
-        HasLabel = shown?.Label is not null;
-        Description = shown?.Description ?? string.Empty;
+        Label = shown?.Label is { IsEmpty: false } label ? label.Get(localization.CurrentLanguage) : FileName;
+        HasLabel = shown?.Label is { IsEmpty: false };
+        Description = shown?.Description?.Get(localization.CurrentLanguage) ?? string.Empty;
         SizeText = status.Target is { SizeBytes: > 0 } t ? ByteSize.Format(t.SizeBytes) : string.Empty;
         IsPs4 = AssetClassifier.DetectPlatform(FileName) == ConsolePlatform.PS4;
         IsBeta = status.Channel == FileChannel.Beta;

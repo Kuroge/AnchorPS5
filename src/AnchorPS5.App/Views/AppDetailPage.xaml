@@ -3,6 +3,7 @@
     x:Class="AnchorPS5.App.Views.AppDetailPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:AnchorPS5.App.Controls"
     xmlns:l="using:AnchorPS5.App.Localization"
     xmlns:vm="using:AnchorPS5.App.ViewModels"
     Background="Transparent">
@@ -143,11 +144,42 @@
                                 Style="{StaticResource ChipStyle}"
                                 Visibility="{x:Bind Item.HasBeta}">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <c:BetaIcon
+                                        Width="12"
+                                        Height="12"
+                                        Foreground="{ThemeResource BetaBrush}" />
+                                    <TextBlock Foreground="{ThemeResource BetaBrush}" Text="{x:Bind Item.BetaText}" />
+                                </StackPanel>
+                            </Border>
+                            <!-- Origen: oficial (dorado), añadida por ti (naranja) u otro catálogo -->
+                            <Border
+                                Background="{ThemeResource AnchorGoldTintBrush}"
+                                Style="{StaticResource ChipStyle}"
+                                Visibility="{x:Bind Item.IsOfficialOrigin}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon
+                                        FontSize="12"
+                                        Foreground="{ThemeResource AnchorGoldBrush}"
+                                        Glyph="{x:Bind Item.OriginGlyph}" />
+                                    <TextBlock Foreground="{ThemeResource AnchorGoldBrush}" Text="{x:Bind Item.OriginText}" />
+                                </StackPanel>
+                            </Border>
+                            <Border
+                                Background="{ThemeResource BetaTintBrush}"
+                                Style="{StaticResource ChipStyle}"
+                                Visibility="{x:Bind Item.IsCustomOrigin}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
                                     <FontIcon
                                         FontSize="12"
                                         Foreground="{ThemeResource BetaBrush}"
-                                        Glyph="&#xE7BA;" />
-                                    <TextBlock Foreground="{ThemeResource BetaBrush}" Text="{x:Bind Item.BetaText}" />
+                                        Glyph="{x:Bind Item.OriginGlyph}" />
+                                    <TextBlock Foreground="{ThemeResource BetaBrush}" Text="{x:Bind Item.OriginText}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ChipStyle}" Visibility="{x:Bind Item.IsExternalOrigin}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon FontSize="12" Glyph="{x:Bind Item.OriginGlyph}" />
+                                    <TextBlock Text="{x:Bind Item.OriginText}" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -298,10 +330,10 @@
                                                     Orientation="Horizontal"
                                                     Spacing="4"
                                                     Visibility="{x:Bind IsBeta}">
-                                                    <FontIcon
-                                                        FontSize="13"
-                                                        Foreground="{ThemeResource BetaBrush}"
-                                                        Glyph="&#xE7BA;" />
+                                                    <c:BetaIcon
+                                                        Width="13"
+                                                        Height="13"
+                                                        Foreground="{ThemeResource BetaBrush}" />
                                                     <TextBlock
                                                         FontWeight="SemiBold"
                                                         Foreground="{ThemeResource BetaBrush}"
@@ -328,11 +360,11 @@
                                                 Orientation="Horizontal"
                                                 Spacing="8"
                                                 Visibility="{x:Bind HasBetaOffer}">
-                                                <FontIcon
+                                                <c:BetaIcon
                                                     VerticalAlignment="Center"
-                                                    FontSize="13"
-                                                    Foreground="{ThemeResource BetaBrush}"
-                                                    Glyph="&#xE7BA;" />
+                                                    Width="13"
+                                                    Height="13"
+                                                    Foreground="{ThemeResource BetaBrush}" />
                                                 <TextBlock
                                                     VerticalAlignment="Center"
                                                     Foreground="{ThemeResource BetaBrush}"
@@ -457,10 +489,10 @@
                                                                 Orientation="Horizontal"
                                                                 Spacing="4"
                                                                 Visibility="{x:Bind IsBeta}">
-                                                                <FontIcon
-                                                                    FontSize="12"
-                                                                    Foreground="{ThemeResource BetaBrush}"
-                                                                    Glyph="&#xE7BA;" />
+                                                                <c:BetaIcon
+                                                                    Width="12"
+                                                                    Height="12"
+                                                                    Foreground="{ThemeResource BetaBrush}" />
                                                                 <TextBlock
                                                                     FontWeight="SemiBold"
                                                                     Foreground="{ThemeResource BetaBrush}"
@@ -521,51 +553,76 @@
                 <Grid
                     ColumnDefinitions="Auto,Auto,*"
                     ColumnSpacing="16"
-                    RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                     RowSpacing="14">
                     <FontIcon Glyph="&#xE8EC;" Style="{StaticResource InfoIconStyle}" />
                     <TextBlock Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.version}" />
                     <TextBlock Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.Version}" />
 
-                    <FontIcon Grid.Row="1" Glyph="&#xE77B;" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.author}" />
-                    <HyperlinkButton
+                    <!-- Beta disponible (solo si la hay) -->
+                    <c:BetaIcon
                         Grid.Row="1"
+                        Visibility="{x:Bind Item.HasBeta}"
+                        VerticalAlignment="Center"
+                        Width="16"
+                        Height="16"
+                        Foreground="{ThemeResource BetaBrush}" />
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Style="{StaticResource InfoLabelStyle}"
+                        Text="{l:Loc Key=detail.betaVersion}"
+                        Visibility="{x:Bind Item.HasBeta}" />
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        Style="{StaticResource InfoValueStyle}"
+                        Text="{x:Bind Item.Package.BetaVersion}"
+                        Visibility="{x:Bind Item.HasBeta}" />
+
+                    <FontIcon Grid.Row="2" Glyph="&#xE77B;" Style="{StaticResource InfoIconStyle}" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.author}" />
+                    <HyperlinkButton
+                        Grid.Row="2"
                         Grid.Column="2"
                         Padding="0"
                         Content="{x:Bind Item.Author}"
                         NavigateUri="{x:Bind Item.AuthorUrl}"
                         Visibility="{x:Bind Item.HasAuthorUrl}" />
                     <TextBlock
-                        Grid.Row="1"
+                        Grid.Row="2"
                         Grid.Column="2"
                         Style="{StaticResource InfoValueStyle}"
                         Text="{x:Bind Item.Author}"
                         Visibility="{x:Bind Item.HasNoAuthorUrl}" />
 
-                    <FontIcon Grid.Row="2" Glyph="&#xE71B;" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.release}" />
+                    <FontIcon Grid.Row="3" Glyph="&#xE71B;" Style="{StaticResource InfoIconStyle}" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.release}" />
                     <HyperlinkButton
-                        Grid.Row="2"
+                        Grid.Row="3"
                         Grid.Column="2"
                         Padding="0"
                         Content="{x:Bind Item.ReleaseLinkText}"
                         IsEnabled="{x:Bind Item.HasReleaseUrl}"
                         NavigateUri="{x:Bind Item.Package.ReleaseUrl}" />
 
-                    <FontIcon Grid.Row="3" Glyph="&#xE8F1;" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.github}" />
+                    <FontIcon Grid.Row="4" Glyph="&#xE8F1;" Style="{StaticResource InfoIconStyle}" />
+                    <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.github}" />
                     <HyperlinkButton
-                        Grid.Row="3"
+                        Grid.Row="4"
                         Grid.Column="2"
                         Padding="0"
                         Content="{x:Bind Item.RepoText}"
                         IsEnabled="{x:Bind Item.HasRepo}"
                         NavigateUri="{x:Bind Item.RepoUrl}" />
 
-                    <FontIcon Grid.Row="4" Glyph="&#xE943;" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.id}" />
-                    <TextBlock Grid.Row="4" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.Id}" />
+                    <FontIcon Grid.Row="5" Glyph="{x:Bind Item.OriginGlyph}" Style="{StaticResource InfoIconStyle}" />
+                    <TextBlock Grid.Row="5" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.origin}" />
+                    <TextBlock Grid.Row="5" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.OriginText}" />
+
+                    <FontIcon Grid.Row="6" Glyph="&#xE943;" Style="{StaticResource InfoIconStyle}" />
+                    <TextBlock Grid.Row="6" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.id}" />
+                    <TextBlock Grid.Row="6" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.Id}" />
                 </Grid>
             </Border>
         </StackPanel>

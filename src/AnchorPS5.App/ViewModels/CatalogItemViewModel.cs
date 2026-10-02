@@ -44,18 +44,20 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
         PackageStatus status,
         bool isNew,
         string appFolder,
-        Func<string, string> fileFolder)
+        Func<string, string> fileFolder,
+        AppOrigin origin)
     {
         _localization = localization;
+        Origin = origin;
         _actions = actions;
         _fileFolder = fileFolder;
         Entry = entry;
         Package = package;
         IsNew = isNew;
         AppFolder = appFolder;
-        Description = string.IsNullOrWhiteSpace(entry.App.Description)
+        Description = entry.App.Description.IsEmpty
             ? localization.Get("detail.noDescription")
-            : entry.App.Description;
+            : entry.App.Description.Get(localization.CurrentLanguage);
         BetaText = package.BetaVersion is { } beta ? localization.Format("file.betaChip", beta) : string.Empty;
         FilesTitle = package.DisplayVersion is { } v ? localization.Format("detail.filesTitle", v) : localization.Get("detail.filesTitleNoVersion");
         SetStatus(status);
@@ -81,8 +83,6 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
     public string BetaText { get; }
 
     /// <summary>Tamaño del fichero principal (si solo hay uno).</summary>
-    public bool HasSize => Package.Files.Count(f => !f.IsPrerelease) == 1 && Package.Files[0].SizeBytes > 0;
-    public string SizeText => HasSize ? ByteSize.Format(Package.Files[0].SizeBytes) : "—";
 
     public bool HasReleaseUrl => Package.ReleaseUrl is not null;
 
@@ -95,6 +95,29 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
     public Uri? RepoUrl => Repo is { } r ? new Uri($"https://github.com/{r.Owner}/{r.Name}") : null;
 
     public string RepoText => Repo?.ToString() ?? "—";
+
+    /// <summary>Catálogo oficial, añadida por el usuario u otro catálogo remoto.</summary>
+    public AppOrigin Origin { get; }
+
+    public bool IsOfficialOrigin => Origin == AppOrigin.Official;
+
+    public bool IsCustomOrigin => Origin == AppOrigin.Custom;
+
+    public bool IsExternalOrigin => Origin == AppOrigin.External;
+
+    public string OriginText => Origin switch
+    {
+        AppOrigin.Official => _localization.Get("origin.official"),
+        AppOrigin.Custom => _localization.Get("origin.custom"),
+        _ => Entry.Source.Name,
+    };
+
+    public string OriginGlyph => Origin switch
+    {
+        AppOrigin.Official => "\uE73E",
+        AppOrigin.Custom => "\uE70F",
+        _ => "\uE753",
+    };
 
     /// <summary>Perfil de GitHub del autor (el dueño del repo).</summary>
     public Uri? AuthorUrl => Repo is { } r ? new Uri($"https://github.com/{r.Owner}") : null;

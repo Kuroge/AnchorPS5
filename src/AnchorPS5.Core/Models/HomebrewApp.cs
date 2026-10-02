@@ -13,7 +13,8 @@ public sealed class HomebrewApp
     public string Version { get; set; } = string.Empty;
 
     public string Author { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
+    /// <summary>Texto simple o traducciones por idioma ({ "es": "…", "en": "…" }).</summary>
+    public LocalizedText Description { get; set; } = LocalizedText.Empty;
 
     /// <summary>URL https o ruta local.</summary>
     public string? IconUrl { get; set; }
@@ -37,7 +38,7 @@ public sealed class HomebrewApp
 public sealed class AssetRule
 {
     public string Match { get; set; } = string.Empty;
-    public string? Label { get; set; }
-    public string? Description { get; set; }
+    public LocalizedText? Label { get; set; }
+    public LocalizedText? Description { get; set; }
     public bool Hidden { get; set; }
 }

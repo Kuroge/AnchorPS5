@@ -61,6 +61,9 @@ public partial class App : Application
 
     public static PackageResolver PackageResolver { get; } = new(GitHub);
 
+    /// <summary>Catálogo oficial: copia local en config\ y última versión recibida en config\cache.</summary>
+    public static OfficialCatalogSync OfficialSync { get; } = new(Http, Paths.ConfigDirectory, Path.Combine(Paths.ConfigDirectory, "cache"));
+
     public static AppConfig Config { get; private set; } = null!;
 
     public static FirstRunService FirstRun { get; private set; } = null!;
