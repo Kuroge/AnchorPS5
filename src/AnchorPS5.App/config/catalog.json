@@ -1,4 +1,4 @@
-// Catálogo local: homebrew para PS5 ya en modo homebrew (payloads .elf que se envían a un ELF loader).
+// Catálogo local: homebrew para PS5 (payloads .elf que se envían a un ELF loader).
 // Con "repo", los ficheros descargables salen de la última release de GitHub (con su SHA-256),
 // sin listarlos aquí: si el autor publica un fichero nuevo, aparece solo.
 // "assets" es opcional: etiquetas y descripciones para los ficheros cuyo nombre encaje (* y ?).

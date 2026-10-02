@@ -176,6 +176,7 @@ public sealed partial class MainWindow : Window
     {
         Title = App.Localization.Get("app.title");
         AppTitleBar.Title = Title;
+        AppTitleBar.Subtitle = App.Version;
     }
 
     private async Task<string?> PickFolderAsync()

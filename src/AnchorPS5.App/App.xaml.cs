@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Globalization;
 using AnchorPS5.Core;
 using AnchorPS5.Core.Catalog;
@@ -20,6 +21,12 @@ public partial class App : Application
     {
         InitializeComponent();
     }
+
+    /// <summary>Versión de la app (SemVer, p. ej. 0.1.0-alpha.1), de Directory.Build.props.</summary>
+    public static string Version { get; } =
+        typeof(App).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+        ?? typeof(App).Assembly.GetName().Version?.ToString(3)
+        ?? "0.0.0";
 
     public static AppPaths Paths { get; } = AppPaths.FromExecutable();
 
@@ -94,8 +101,7 @@ public partial class App : Application
     private static HttpClient CreateHttpClient(TimeSpan timeout)
     {
         var client = new HttpClient { Timeout = timeout };
-        var version = typeof(App).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
-        client.DefaultRequestHeaders.UserAgent.ParseAdd($"AnchorPS5/{version}");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd($"AnchorPS5/{Version}");
         return client;
     }
 }

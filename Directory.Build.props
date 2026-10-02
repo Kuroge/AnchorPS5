@@ -1,6 +1,11 @@
 <Project>
   <PropertyGroup>
-    <Version>0.1.0</Version>
+    <!-- Versión de la app (SemVer): se cambia solo aquí. La etiqueta (alpha.N, beta.N…) va en
+         VersionSuffix; para una versión final se deja vacía. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>alpha.1</VersionSuffix>
+    <!-- Sin el "+hash" del commit en la versión que ve el usuario. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Authors>cheyen2008</Authors>
     <Company>cheyen2008</Company>
     <Product>AnchorPS5</Product>

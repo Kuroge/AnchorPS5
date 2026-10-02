@@ -13,8 +13,7 @@ public sealed partial class BrandHero : UserControl
     {
         InitializeComponent();
 
-        var version = typeof(App).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
-        VersionText.Text = App.Localization.Format("app.versionBy", version, "cheyen2008");
+        VersionText.Text = App.Localization.Format("app.versionBy", App.Version, "cheyen2008");
     }
 
     /// <summary>Muestra los puntos de progreso (0 = ocultos).</summary>
