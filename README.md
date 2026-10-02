@@ -96,12 +96,14 @@ las demás (está explicado en el repo del catálogo). Aparecerá marcada como
 
 ## Traducir AnchorPS5
 
-Los textos están en `lang\<idioma>.json` (de fábrica, `es.json`):
+La app viene en **español** e **inglés**: el idioma se elige en la configuración inicial
+(viene preseleccionado el de tu Windows). Los textos están en
+`lang\<idioma>.json`; para añadir otro idioma:
 
-1. Copia `lang\es.json` como `lang\<código>.json` (p. ej. `en.json`).
-2. Cambia `_meta` (`"code": "en"`, `"name": "English"`) y traduce los textos (no las claves).
+1. Copia `lang\en.json` (o `es.json`) como `lang\<código>.json` (p. ej. `fr.json`).
+2. Cambia `_meta` (`"code": "fr"`, `"name": "Français"`) y traduce los textos (no las claves).
 3. El idioma aparece en la configuración inicial, o ponlo en `config\config.json`
-   (`"language": "en"`).
+   (`"language": "fr"`).
 
 ¡Las traducciones son bienvenidas como pull request!
 

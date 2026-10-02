@@ -349,7 +349,10 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         UpdateCounts();
 
         SourceErrors = string.Join(Environment.NewLine, result.FailedSources.Select(f =>
-            _localization.Format("catalog.sourceError", f.Source.Name, _localization.Get(ErrorKey(f.Error)))));
+            _localization.Format(
+                "catalog.sourceError",
+                f.Source.Type == SourceType.Official ? _localization.Get("origin.official") : f.Source.Name,
+                _localization.Get(ErrorKey(f.Error)))));
         IsLoaded = true;
         ApplyFilter();
     }

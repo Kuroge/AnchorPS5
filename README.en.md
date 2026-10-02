@@ -96,12 +96,14 @@ the others (it's explained in the catalog repo). It will show up marked as
 
 ## Translating AnchorPS5
 
-Texts live in `lang\<language>.json` (`es.json` out of the box):
+The app comes in **Spanish** and **English**: you choose the language in the first-run
+setup (your Windows language comes preselected).
+Texts live in `lang\<language>.json`; to add another language:
 
-1. Copy `lang\es.json` as `lang\<code>.json` (e.g. `en.json`).
-2. Change `_meta` (`"code": "en"`, `"name": "English"`) and translate the texts (not the keys).
+1. Copy `lang\en.json` (or `es.json`) as `lang\<code>.json` (e.g. `fr.json`).
+2. Change `_meta` (`"code": "fr"`, `"name": "Français"`) and translate the texts (not the keys).
 3. The language shows up in the first-run setup, or set it in `config\config.json`
-   (`"language": "en"`).
+   (`"language": "fr"`).
 
 Translations are welcome as pull requests!
 

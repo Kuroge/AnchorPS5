@@ -37,7 +37,8 @@ First test version.
   warns first that it may use up the GitHub limit).
 - **First-run setup:** language, download folder and GitHub account.
 - **Translatable texts** from JSON files (`lang/`), catalog descriptions included.
-  Spanish out of the box.
+  **Spanish and English** out of the box; the language is chosen in the first-run setup,
+  with the Windows language preselected.
 - **Design** with PlayStation colors and the PS5 boot gold, Mica background and light or
   dark theme following Windows.
 

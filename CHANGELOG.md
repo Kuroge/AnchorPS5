@@ -37,7 +37,8 @@ Primera versión de prueba.
   antes de que pueda gastar el límite de GitHub).
 - **Configuración inicial:** idioma, carpeta de descargas y cuenta de GitHub.
 - **Textos traducibles** desde ficheros JSON (`lang/`), también las descripciones del
-  catálogo. De fábrica, en español.
+  catálogo. De fábrica, en **español e inglés**; el idioma se elige en la configuración inicial, con
+  el de Windows preseleccionado.
 - **Diseño** con los colores de PlayStation y el dorado del arranque de PS5, fondo Mica y
   tema claro u oscuro según Windows.
 
