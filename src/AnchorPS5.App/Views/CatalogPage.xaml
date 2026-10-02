@@ -62,7 +62,25 @@
                 IsOpen="{x:Bind ViewModel.HasGitHubWarning, Mode=OneWay}"
                 Message="{x:Bind ViewModel.GitHubWarning, Mode=OneWay}"
                 Severity="Warning"
-                Title="{l:Loc Key=github.title}" />
+                Title="{l:Loc Key=github.title}">
+                <StackPanel
+                    Margin="0,0,0,12"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    Visibility="{x:Bind ViewModel.IsGitHubRateLimited, Mode=OneWay}">
+                    <Button
+                        AutomationProperties.Name="{l:Loc Key=github.signIn}"
+                        Click="OnGitHubSignInClick"
+                        Style="{StaticResource AccentButtonStyle}"
+                        Visibility="{x:Bind ViewModel.CanSignInFromWarning, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="14" Glyph="&#xE77B;" />
+                            <TextBlock Text="{l:Loc Key=github.signIn}" />
+                        </StackPanel>
+                    </Button>
+                    <HyperlinkButton Content="{l:Loc Key=github.learnMore}" NavigateUri="https://docs.github.com/rest/using-the-rest-api/rate-limits-for-the-rest-api" />
+                </StackPanel>
+            </InfoBar>
         </StackPanel>
 
         <GridView

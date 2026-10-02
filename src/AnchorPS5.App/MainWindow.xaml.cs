@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using AnchorPS5.App.Controls;
 using AnchorPS5.App.ViewModels;
 using AnchorPS5.App.Views;
 using AnchorPS5.Core.Models;
@@ -124,8 +125,12 @@ public sealed partial class MainWindow : Window
         AppTitleBar.IsBackButtonVisible = false;
         AppTitleBar.IsBackButtonEnabled = true;
         AppTitleBar.IsPaneToggleButtonVisible = true;
-        // Descargas a la derecha del todo, pegado a los botones de la ventana.
-        AppTitleBar.RightHeader = _shell.DownloadsIndicator;
+        // Descargas y cuenta de GitHub a la derecha del todo, pegados a los botones de la ventana.
+        AppTitleBar.RightHeader = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Children = { _shell.DownloadsIndicator, new AccountIndicator() },
+        };
         ShowScreen(_shell);
     }
 

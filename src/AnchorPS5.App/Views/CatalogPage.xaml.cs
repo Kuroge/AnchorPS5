@@ -29,4 +29,8 @@ public sealed partial class CatalogPage : Page
 
     private void OnItemClick(object sender, ItemClickEventArgs e) =>
         Frame.Navigate(typeof(AppDetailPage), e.ClickedItem, new DrillInNavigationTransitionInfo());
+
+    // Al iniciar sesión, el armazón refresca el catálogo con el nuevo límite.
+    private async void OnGitHubSignInClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) =>
+        await GitHubAccountDialogs.SignInAsync(XamlRoot, ActualTheme);
 }

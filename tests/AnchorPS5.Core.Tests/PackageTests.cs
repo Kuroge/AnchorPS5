@@ -413,8 +413,84 @@ public sealed class GitHubClientTests : IDisposable
             Directory.Delete(_cache, recursive: true);
     }
 
-    private GitHubClient Client(Func<HttpRequestMessage, HttpResponseMessage> respond, string? token = null) =>
-        new(new HttpClient(new Stub(respond)), _cache, () => token);
+    private DateTimeOffset _now = new(2026, 10, 2, 12, 0, 0, TimeSpan.Zero);
+
+    // Por defecto sin caché fresca, para que cada petición llegue a GitHub.
+    private GitHubClient Client(Func<HttpRequestMessage, HttpResponseMessage> respond, string? token = null, TimeSpan? maxAge = null) =>
+        new(new HttpClient(new Stub(respond)), _cache, () => token, () => _now) { MaxAge = maxAge ?? TimeSpan.Zero };
+
+    private static HttpResponseMessage RateLimited(DateTimeOffset? reset)
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Forbidden);
+        response.Headers.Add("X-RateLimit-Remaining", "0");
+        if (reset is { } at)
+            response.Headers.Add("X-RateLimit-Reset", at.ToUnixTimeSeconds().ToString());
+        return response;
+    }
+
+    [Fact]
+    public async Task FreshCache_IsUsed_WithoutAskingGitHub()
+    {
+        var calls = 0;
+        var client = Client(_ => { calls++; return Ok("\"v1\""); }, maxAge: TimeSpan.FromMinutes(30));
+
+        await client.GetReleasesAsync(Repo);
+        _now = _now.AddMinutes(29);
+        var second = await client.GetReleasesAsync(Repo);
+
+        Assert.Equal(1, calls);
+        Assert.Equal(GitHubStatus.Ok, second.Status);
+        Assert.Single(second.Value!);
+    }
+
+    [Fact]
+    public async Task ExpiredCache_AsksGitHubAgain_And304RenewsIt()
+    {
+        var calls = 0;
+        var client = Client(_ => ++calls == 1 ? Ok("\"v1\"") : new HttpResponseMessage(HttpStatusCode.NotModified),
+            maxAge: TimeSpan.FromMinutes(30));
+
+        await client.GetReleasesAsync(Repo);
+        _now = _now.AddMinutes(31);
+        await client.GetReleasesAsync(Repo); // 304: renueva la fecha
+        _now = _now.AddMinutes(10);
+        await client.GetReleasesAsync(Repo); // fresca otra vez
+
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
+    public async Task RateLimit_BlocksFurtherRequests_UntilReset_EvenAfterRestart()
+    {
+        var reset = _now.AddMinutes(40);
+        await Client(_ => RateLimited(reset)).GetReleasesAsync(Repo);
+
+        var calls = 0;
+        var restarted = Client(_ => { calls++; return Ok("\"v1\""); });
+        var blocked = await restarted.GetReleasesAsync(Repo);
+
+        Assert.Equal(0, calls);
+        Assert.Equal(GitHubStatus.RateLimited, blocked.Status);
+        Assert.Equal(reset.ToUnixTimeSeconds(), blocked.RateLimitReset!.Value.ToUnixTimeSeconds());
+
+        _now = reset.AddSeconds(1);
+        var after = await restarted.GetReleasesAsync(Repo);
+        Assert.Equal(1, calls);
+        Assert.Equal(GitHubStatus.Ok, after.Status);
+    }
+
+    [Fact]
+    public async Task ClearRateLimit_AllowsRequestsAgain()
+    {
+        var client = Client(_ => RateLimited(_now.AddMinutes(40)));
+        await client.GetReleasesAsync(Repo);
+        Assert.NotNull(client.BlockedUntil);
+
+        client.ClearRateLimit();
+
+        Assert.Null(client.BlockedUntil);
+        Assert.Null(Client(_ => Ok("\"v1\"")).BlockedUntil);
+    }
 
     private static HttpResponseMessage Ok(string etag)
     {

@@ -4,6 +4,7 @@ using AnchorPS5.App.ViewModels;
 using AnchorPS5.Core.Catalog;
 using AnchorPS5.Core.Downloads;
 using AnchorPS5.Core.Library;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -15,6 +16,10 @@ namespace AnchorPS5.App.Views;
 public sealed partial class ShellPage : Page
 {
     private readonly CatalogViewModel _catalog;
+    private readonly DispatcherQueueTimer _refreshTimer;
+    private DateTimeOffset _lastRefresh = DateTimeOffset.UtcNow;
+    private bool _wasBlocked;
+    private bool _signedIn = App.GitHubSession.IsSignedIn;
 
     public ShellPage()
     {
@@ -33,8 +38,22 @@ public sealed partial class ShellPage : Page
             App.SeenApps,
             App.Channels,
             downloads,
-            App.PackageResolver);
+            App.PackageResolver,
+            () => App.GitHubSession.IsSignedIn);
         _catalog.PropertyChanged += OnCatalogPropertyChanged;
+
+        // Refresco automático: cada minuto se comprueba si toca (caché caducada o fin del
+        // bloqueo por límite). Lo que sigue fresco en caché no llega a consultar GitHub.
+        _refreshTimer = DispatcherQueue.CreateTimer();
+        _refreshTimer.Interval = TimeSpan.FromMinutes(1);
+        _refreshTimer.Tick += (_, _) => RefreshIfDue();
+        _refreshTimer.Start();
+        App.GitHubSession.Changed += OnSessionChanged;
+        Unloaded += (_, _) =>
+        {
+            _refreshTimer.Stop();
+            App.GitHubSession.Changed -= OnSessionChanged;
+        };
 
         NavView.SelectedItem = CatalogItem;
         ContentFrame.Navigate(typeof(CatalogPage), _catalog);
@@ -91,6 +110,33 @@ public sealed partial class ShellPage : Page
         badge.Value = count;
         badge.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
+
+    private void RefreshIfDue()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var blocked = App.GitHub.BlockedUntil is not null;
+        var unblocked = _wasBlocked && !blocked;
+        _wasBlocked = blocked;
+
+        if (unblocked || now - _lastRefresh >= App.GitHub.MaxAge)
+            RefreshNow();
+    }
+
+    private void RefreshNow()
+    {
+        _lastRefresh = DateTimeOffset.UtcNow;
+        _ = _catalog.RefreshInBackgroundAsync();
+    }
+
+    // Al iniciar o cerrar sesión cambia el límite: se vuelve a consultar lo pendiente.
+    private void OnSessionChanged(object? sender, EventArgs e) => DispatcherQueue.TryEnqueue(() =>
+    {
+        if (App.GitHubSession.IsSignedIn == _signedIn)
+            return;
+
+        _signedIn = App.GitHubSession.IsSignedIn;
+        RefreshNow();
+    });
 
     private void OnNavigated(object sender, NavigationEventArgs e) => CanGoBackChanged?.Invoke(this, ContentFrame.CanGoBack);
 }

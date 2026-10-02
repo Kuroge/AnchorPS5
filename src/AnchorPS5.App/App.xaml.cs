@@ -2,6 +2,7 @@ using System.Globalization;
 using AnchorPS5.Core;
 using AnchorPS5.Core.Catalog;
 using AnchorPS5.Core.Configuration;
+using AnchorPS5.App.Services;
 using AnchorPS5.Core.GitHub;
 using AnchorPS5.Core.Library;
 using AnchorPS5.Core.Packages;
@@ -44,8 +45,19 @@ public partial class App : Application
 
     public static ChannelPreferences Channels { get; } = new(State);
 
-    /// <summary>API de GitHub con caché en config\cache\github (las respuestas sin cambios no gastan cupo).</summary>
-    public static GitHubClient GitHub { get; } = new(Http, Path.Combine(Paths.ConfigDirectory, "cache", "github"));
+    /// <summary>
+    /// Client ID de la OAuth App "AnchorPS5" en GitHub (público: identifica a la app al
+    /// iniciar sesión con el flujo de dispositivo; no hay secreto).
+    /// </summary>
+    public const string GitHubClientId = "Ov23liwzgH1dVqeAgPeP";
+
+    private static string GitHubCacheDirectory => Path.Combine(Paths.ConfigDirectory, "cache", "github");
+
+    /// <summary>Sesión de GitHub (opcional): el token sube el límite de la API de 60 a 5000 consultas/hora.</summary>
+    public static GitHubSession GitHubSession { get; } = new(new CredentialTokenStore(), Http, GitHubCacheDirectory);
+
+    /// <summary>API de GitHub con caché en config\cache\github; usa el token de la sesión si la hay.</summary>
+    public static GitHubClient GitHub { get; } = new(Http, GitHubCacheDirectory, () => GitHubSession.Token);
 
     public static PackageResolver PackageResolver { get; } = new(GitHub);
 
@@ -60,6 +72,17 @@ public partial class App : Application
         Config = ConfigService.LoadOrCreate(detectedLanguage);
         Localization.Load(Config.Language);
         FirstRun = new FirstRunService(ConfigService, Config);
+
+        // El token se lee al momento; el perfil llega después sin bloquear el arranque.
+        _ = GitHubSession.RestoreAsync();
+        var signedIn = GitHubSession.IsSignedIn;
+        GitHubSession.Changed += (_, _) =>
+        {
+            // Al iniciar o cerrar sesión cambia el cupo: el bloqueo anterior ya no vale.
+            if (GitHubSession.IsSignedIn != signedIn)
+                GitHub.ClearRateLimit();
+            signedIn = GitHubSession.IsSignedIn;
+        };
 
         _window = new MainWindow();
         _window.Activate();

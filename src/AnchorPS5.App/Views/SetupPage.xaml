@@ -67,6 +67,50 @@
                     </Grid>
                 </Border>
 
+                <!-- Cuenta de GitHub (opcional) -->
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                        <FontIcon
+                            FontSize="20"
+                            Foreground="{ThemeResource AnchorBlueBrush}"
+                            Glyph="&#xE77B;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{l:Loc Key=github.account}" />
+                            <TextBlock
+                                Style="{StaticResource CaptionSecondaryTextStyle}"
+                                Text="{l:Loc Key=setup.githubDescription}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button
+                            x:Name="GitHubSignInButton"
+                            AutomationProperties.Name="{l:Loc Key=github.signIn}"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Click="OnGitHubSignInClick">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="&#xE77B;" />
+                                <TextBlock Text="{l:Loc Key=github.signIn}" />
+                            </StackPanel>
+                        </Button>
+                        <StackPanel
+                            x:Name="GitHubSignedInPanel"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal"
+                            Spacing="10"
+                            Visibility="Collapsed">
+                            <PersonPicture x:Name="GitHubPicture" Width="32" Height="32" />
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="GitHubSignedInText" />
+                                <HyperlinkButton
+                                    Padding="0"
+                                    Click="OnGitHubSignOutClick"
+                                    Content="{l:Loc Key=github.signOut}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
                 <InfoBar
                     IsClosable="False"
                     IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"

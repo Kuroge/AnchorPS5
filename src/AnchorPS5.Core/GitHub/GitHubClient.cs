@@ -8,8 +8,11 @@ using AnchorPS5.Core.Configuration;
 namespace AnchorPS5.Core.GitHub;
 
 /// <summary>
-/// Acceso a la API de GitHub con caché en disco y peticiones condicionales (ETag):
-/// si nada ha cambiado GitHub responde 304 y no gasta cupo del límite de la API.
+/// Acceso a la API de GitHub con caché en disco:
+/// - Lo guardado hace menos de <see cref="MaxAge"/> se usa sin preguntar a GitHub.
+/// - Después se pregunta con ETag (con sesión, un 304 no gasta cupo; sin sesión, sí).
+/// - Si GitHub dice que se ha alcanzado el límite, no se le vuelve a preguntar hasta la
+///   hora que indica (se recuerda entre arranques).
 /// </summary>
 public sealed class GitHubClient
 {
@@ -18,13 +21,41 @@ public sealed class GitHubClient
     private readonly HttpClient _http;
     private readonly string _cacheDirectory;
     private readonly Func<string?> _token;
+    private readonly Func<DateTimeOffset> _now;
+    private readonly string _rateLimitFile;
+    private DateTimeOffset? _blockedUntil;
+    private bool _simulatedBlock;
 
     /// <param name="token">Token de sesión (opcional): sube el límite de la API.</param>
-    public GitHubClient(HttpClient http, string cacheDirectory, Func<string?>? token = null)
+    /// <param name="now">Reloj (para los tests).</param>
+    public GitHubClient(HttpClient http, string cacheDirectory, Func<string?>? token = null, Func<DateTimeOffset>? now = null)
     {
         _http = http;
         _cacheDirectory = cacheDirectory;
         _token = token ?? (() => null);
+        _now = now ?? (() => DateTimeOffset.UtcNow);
+        _rateLimitFile = Path.Combine(cacheDirectory, "ratelimit.json");
+        var block = ReadRateLimit();
+        _blockedUntil = block?.Until;
+        _simulatedBlock = block?.Simulated == true;
+    }
+
+    /// <summary>Antigüedad máxima de la caché antes de volver a preguntar a GitHub.</summary>
+    public TimeSpan MaxAge { get; set; } = TimeSpan.FromMinutes(30);
+
+    /// <summary>Hasta cuándo no se pregunta a GitHub por haber alcanzado el límite (null = sin bloqueo).</summary>
+    public DateTimeOffset? BlockedUntil => _blockedUntil is { } until && until > _now() ? until : null;
+
+    /// <summary>Olvida el bloqueo por límite (al iniciar o cerrar sesión cambia el cupo).</summary>
+    public void ClearRateLimit()
+    {
+#if DEBUG
+        // Bloqueo simulado por el entorno de pruebas: se mantiene aunque se inicie sesión.
+        if (_simulatedBlock && BlockedUntil is not null)
+            return;
+#endif
+        _blockedUntil = null;
+        TryDelete(_rateLimitFile);
     }
 
     /// <summary>Releases del repo, de la más reciente a la más antigua (hasta 20).</summary>
@@ -50,6 +81,12 @@ public sealed class GitHubClient
         var cacheFile = Path.Combine(_cacheDirectory, CacheName(path));
         var cached = ReadCache(cacheFile);
 
+        if (cached is not null && _now() - cached.FetchedAt < MaxAge)
+            return new GitHubResult<string>(cached.Body, GitHubStatus.Ok);
+
+        if (BlockedUntil is { } blocked)
+            return new GitHubResult<string>(cached?.Body, GitHubStatus.RateLimited, blocked);
+
         using var request = new HttpRequestMessage(HttpMethod.Get, ApiBase + path);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
@@ -63,10 +100,19 @@ public sealed class GitHubClient
             using var response = await _http.SendAsync(request, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.NotModified && cached is not null)
+            {
+                WriteCache(cacheFile, cached with { FetchedAt = _now() });
                 return new GitHubResult<string>(cached.Body, GitHubStatus.Ok);
+            }
 
             if (IsRateLimited(response, out var reset))
-                return new GitHubResult<string>(cached?.Body, GitHubStatus.RateLimited, reset);
+            {
+                // Sin hora de GitHub se espera una hora, que es su ventana de límite.
+                var until = reset ?? _now().AddHours(1);
+                _blockedUntil = until;
+                WriteRateLimit(until);
+                return new GitHubResult<string>(cached?.Body, GitHubStatus.RateLimited, until);
+            }
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return new GitHubResult<string>(null, GitHubStatus.NotFound);
@@ -75,7 +121,7 @@ public sealed class GitHubClient
                 return new GitHubResult<string>(cached?.Body, cached is null ? GitHubStatus.Error : GitHubStatus.FromCache);
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            WriteCache(cacheFile, new CacheEntry(response.Headers.ETag?.ToString(), body));
+            WriteCache(cacheFile, new CacheEntry(response.Headers.ETag?.ToString(), body, _now()));
             return new GitHubResult<string>(body, GitHubStatus.Ok);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
@@ -114,6 +160,44 @@ public sealed class GitHubClient
         }
     }
 
+    private RateLimitEntry? ReadRateLimit()
+    {
+        try
+        {
+            return File.Exists(_rateLimitFile)
+                ? JsonSerializer.Deserialize<RateLimitEntry>(File.ReadAllText(_rateLimitFile), JsonDefaults.Options)
+                : null;
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private void WriteRateLimit(DateTimeOffset until)
+    {
+        try
+        {
+            Directory.CreateDirectory(_cacheDirectory);
+            File.WriteAllText(_rateLimitFile, JsonSerializer.Serialize(new RateLimitEntry(until), JsonDefaults.Options));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Solo se pierde el recuerdo del bloqueo entre arranques.
+        }
+    }
+
+    private static void TryDelete(string file)
+    {
+        try
+        {
+            File.Delete(file);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
     private static void WriteCache(string file, CacheEntry entry)
     {
         try
@@ -129,5 +213,9 @@ public sealed class GitHubClient
         }
     }
 
-    private sealed record CacheEntry(string? ETag, string Body);
+    /// <param name="FetchedAt">Cuándo se confirmó con GitHub por última vez (las cachés antiguas, sin fecha, cuentan como caducadas).</param>
+    private sealed record CacheEntry(string? ETag, string Body, DateTimeOffset FetchedAt = default);
+
+    /// <param name="Simulated">Escrito por el entorno de pruebas (solo cuenta en compilaciones Debug).</param>
+    private sealed record RateLimitEntry(DateTimeOffset Until, bool Simulated = false);
 }

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="AnchorPS5.App.Controls.AccountIndicator"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:AnchorPS5.App.Localization">
+
+    <!-- Botón de la barra de título con la foto de GitHub (o una silueta sin sesión).
+         Al pulsarlo, un resumen del perfil e iniciar / cerrar sesión. -->
+    <Button
+        x:Name="AccountButton"
+        Width="40"
+        Height="32"
+        Padding="0"
+        AutomationProperties.Name="{l:Loc Key=github.account}"
+        Background="Transparent"
+        BorderThickness="0"
+        ToolTipService.ToolTip="{l:Loc Key=github.account}">
+        <PersonPicture x:Name="SmallPicture" Width="22" Height="22" />
+
+        <Button.Flyout>
+            <Flyout x:Name="AccountFlyout" Placement="BottomEdgeAlignedRight">
+                <StackPanel Width="300" Spacing="12">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                        <PersonPicture x:Name="LargePicture" Width="56" Height="56" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock
+                                x:Name="DisplayNameText"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                TextTrimming="CharacterEllipsis" />
+                            <HyperlinkButton
+                                x:Name="ProfileLink"
+                                Padding="0"
+                                ToolTipService.ToolTip="{l:Loc Key=github.viewProfile}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock
+                        x:Name="DetailText"
+                        Style="{StaticResource SecondaryTextStyle}"
+                        TextWrapping="Wrap" />
+
+                    <Button
+                        x:Name="SignInButton"
+                        AutomationProperties.Name="{l:Loc Key=github.signIn}"
+                        HorizontalAlignment="Stretch"
+                        Click="OnSignInClick"
+                        Style="{StaticResource AccentButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="14" Glyph="&#xE77B;" />
+                            <TextBlock Text="{l:Loc Key=github.signIn}" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="SignOutButton"
+                        AutomationProperties.Name="{l:Loc Key=github.signOut}"
+                        HorizontalAlignment="Stretch"
+                        Click="OnSignOutClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="14" Glyph="&#xF3B1;" />
+                            <TextBlock Text="{l:Loc Key=github.signOut}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Flyout>
+        </Button.Flyout>
+    </Button>
+</UserControl>

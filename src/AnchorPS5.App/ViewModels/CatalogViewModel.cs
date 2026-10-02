@@ -21,10 +21,12 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
     private readonly ChannelPreferences _channels;
     private readonly DownloadsViewModel _downloads;
     private readonly PackageResolver _resolver;
+    private readonly Func<bool> _isSignedIn;
 
     // Nuevas en esta sesión: se mantienen aunque se recargue.
     private readonly HashSet<string> _newIds = new(StringComparer.OrdinalIgnoreCase);
     private List<CatalogItemViewModel> _all = [];
+    private bool _refreshing;
 
     public CatalogViewModel(
         SourceLoader loader,
@@ -34,8 +36,10 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         SeenAppsService seenApps,
         ChannelPreferences channels,
         DownloadsViewModel downloads,
-        PackageResolver resolver)
+        PackageResolver resolver,
+        Func<bool> isSignedIn)
     {
+        _isSignedIn = isSignedIn;
         _resolver = resolver;
         _loader = loader;
         _sources = sources;
@@ -99,14 +103,24 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
 
     public bool HasGitHubWarning => GitHubWarning.Length > 0;
 
+    /// <summary>El aviso es por el límite de la API (muestra "Saber más" e "Iniciar sesión").</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanSignInFromWarning))]
+    public partial bool IsGitHubRateLimited { get; private set; }
+
+    public bool CanSignInFromWarning => IsGitHubRateLimited && !_isSignedIn();
+
     private string BuildGitHubWarning(IReadOnlyList<ResolvedPackage> packages)
     {
-        if (packages.Any(p => p.Source == GitHubStatus.RateLimited))
+        IsGitHubRateLimited = packages.Any(p => p.Source == GitHubStatus.RateLimited);
+        OnPropertyChanged(nameof(CanSignInFromWarning)); // también cambia al iniciar sesión
+        if (IsGitHubRateLimited)
         {
             var reset = _resolver.LastRateLimitReset;
-            return reset is { } at
+            var message = reset is { } at
                 ? _localization.Format("github.rateLimitedUntil", at.ToLocalTime().ToString("t", System.Globalization.CultureInfo.CurrentCulture))
                 : _localization.Get("github.rateLimited");
+            return _isSignedIn() ? message : message + " " + _localization.Get("github.signInHint");
         }
 
         return packages.Any(p => p.Source is GitHubStatus.FromCache or GitHubStatus.Error)
@@ -146,6 +160,46 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
 
         GitHubWarning = string.Empty;
 
+        var data = await FetchAsync();
+        IsLoading = false;
+        Apply(data);
+    }
+
+    /// <summary>
+    /// Refresco automático en segundo plano: no vacía la lista y solo la reconstruye si
+    /// el catálogo o lo publicado en GitHub ha cambiado.
+    /// </summary>
+    public async Task RefreshInBackgroundAsync()
+    {
+        if (!IsLoaded || IsLoading || _refreshing)
+            return;
+
+        _refreshing = true;
+        try
+        {
+            var data = await FetchAsync();
+            if (IsLoading)
+                return; // se ha recargado a mano mientras tanto
+
+            if (SamePackages(data))
+                GitHubWarning = BuildGitHubWarning(data.Packages);
+            else
+                Apply(data);
+        }
+        finally
+        {
+            _refreshing = false;
+        }
+    }
+
+    private sealed record LoadedData(
+        CatalogLoadResult Result,
+        ResolvedPackage[] Packages,
+        LibrarySnapshot Library,
+        IReadOnlyDictionary<string, FileChannel>[] Channels);
+
+    private async Task<LoadedData> FetchAsync()
+    {
         var loadCatalog = _loader.LoadAllAsync(_sources);
         var scanLibrary = Task.Run(_library.Scan);
         var result = await loadCatalog;
@@ -155,7 +209,20 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
         var library = await scanLibrary;
         _newIds.UnionWith(await Task.Run(() => _seenApps.RegisterAndGetNew(result.Entries.Select(e => e.App.Id))));
         var appChannels = await Task.Run(() => result.Entries.Select(e => _channels.GetForApp(e.App.Id)).ToArray());
-        IsLoading = false;
+        return new LoadedData(result, packages, library, appChannels);
+    }
+
+    private bool SamePackages(LoadedData data) =>
+        data.Packages.Length == _all.Count
+        && _all.Select((item, i) =>
+                string.Equals(item.Id, data.Result.Entries[i].App.Id, StringComparison.OrdinalIgnoreCase)
+                && item.Package.ReleaseUrl == data.Packages[i].ReleaseUrl
+                && item.Package.Files.SequenceEqual(data.Packages[i].Files))
+            .All(same => same);
+
+    private void Apply(LoadedData data)
+    {
+        var (result, packages, library, appChannels) = data;
 
         _all = result.Entries
             .Select((e, i) => new CatalogItemViewModel(
