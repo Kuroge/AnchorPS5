@@ -1,0 +1,72 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:AnchorPS5.App.Localization"
+    x:Class="AnchorPS5.App.Views.ShellPage">
+
+  <Grid ColumnDefinitions="220,*">
+    <!-- Menú lateral: secciones del catálogo con contadores. -->
+    <Grid
+        Grid.Column="0"
+        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+        RowDefinitions="Auto,*">
+      <ItemsControl
+          Grid.Row="0"
+          x:Name="Nav"
+          Margin="8">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Button
+                Classes="nav"
+                Margin="0,2"
+                Padding="10,8"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                Background="Transparent"
+                BorderThickness="0"
+                Command="{Binding NavigateCommand}"
+                CommandParameter="{Binding}">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock
+                    Grid.Column="0"
+                    Text="{Binding Glyph}"
+                    FontSize="15"
+                    Width="22"
+                    VerticalAlignment="Center" />
+                <TextBlock
+                    Grid.Column="1"
+                    Text="{Binding Label}"
+                    VerticalAlignment="Center" />
+                <Border
+                    Grid.Column="2"
+                    x:Name="Badge"
+                    CornerRadius="9"
+                    Background="{DynamicResource AnchorGoldBrush}"
+                    MinWidth="18"
+                    Height="18"
+                    Padding="4,0"
+                    VerticalAlignment="Center"
+                    IsVisible="{Binding HasCount}">
+                  <TextBlock
+                      Text="{Binding CountText}"
+                      FontSize="10"
+                      FontWeight="SemiBold"
+                      Foreground="#1C1C1C"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center" />
+                </Border>
+              </Grid>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Grid>
+
+    <!-- Contenido actual (catálogo, detalle o acerca de). -->
+    <ContentControl
+        x:Name="ContentHost"
+        Grid.Column="1"
+        HorizontalContentAlignment="Stretch"
+        VerticalContentAlignment="Stretch" />
+  </Grid>
+</UserControl>

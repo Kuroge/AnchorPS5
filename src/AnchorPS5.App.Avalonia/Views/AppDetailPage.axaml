@@ -1,0 +1,555 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:AnchorPS5.App.Controls"
+    xmlns:l="using:AnchorPS5.App.Localization"
+    xmlns:vm="using:AnchorPS5.App.ViewModels"
+    x:Class="AnchorPS5.App.Views.AppDetailPage">
+
+  <ScrollViewer>
+    <StackPanel
+        MaxWidth="960"
+        Margin="32,20,32,32"
+        HorizontalAlignment="Left"
+        Spacing="8">
+
+      <!-- Volver -->
+      <Button
+          Margin="-8,0,0,4"
+          Padding="8,4"
+          Background="Transparent"
+          BorderThickness="0"
+          HorizontalAlignment="Left"
+          Click="OnBackClick">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="&#x2190;" FontSize="13" />
+          <TextBlock Text="{l:Loc Key=action.back}" />
+        </StackPanel>
+      </Button>
+
+      <!-- Cabecera -->
+      <Border
+          Margin="0,0,0,16"
+          CornerRadius="12"
+          Padding="24"
+          BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+          BorderThickness="1">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Offset="0" Color="#330070D1" />
+            <GradientStop Offset="0.6" Color="#0D0070D1" />
+            <GradientStop Offset="1" Color="#26D4AC28" />
+          </LinearGradientBrush>
+        </Border.Background>
+        <Grid
+            ColumnDefinitions="Auto,*"
+            ColumnSpacing="24">
+          <Border
+              Width="120"
+              Height="120"
+              CornerRadius="24">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Offset="0" Color="#1A8CFF" />
+                <GradientStop Offset="1" Color="#003791" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <Grid>
+              <TextBlock
+                  Text="&#x25A3;"
+                  FontSize="52"
+                  Foreground="White"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center" />
+              <Image Source="{Binding Item.Icon}" Stretch="UniformToFill" />
+            </Grid>
+          </Border>
+
+          <StackPanel
+              Grid.Column="1"
+              VerticalAlignment="Center"
+              Spacing="8">
+            <TextBlock
+                FontSize="28"
+                FontWeight="Bold"
+                Text="{Binding Item.Name}"
+                TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock
+                  Text="&#x263A;"
+                  FontSize="14"
+                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                  VerticalAlignment="Center" />
+              <TextBlock
+                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                  Text="{Binding Item.Author}"
+                  VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock
+                MaxWidth="720"
+                HorizontalAlignment="Left"
+                Text="{Binding Item.Description}"
+                TextWrapping="Wrap" />
+
+            <StackPanel
+                Margin="0,4,0,0"
+                Orientation="Horizontal"
+                Spacing="6">
+              <Border
+                  Background="{DynamicResource AnchorGoldBrush}"
+                  CornerRadius="10"
+                  Padding="8,2"
+                  IsVisible="{Binding Item.IsNew}">
+                <TextBlock FontWeight="SemiBold" Foreground="#1C1C1C" Text="{l:Loc Key=status.new}" />
+              </Border>
+              <Border
+                  Background="{DynamicResource AnchorGoldTintBrush}"
+                  CornerRadius="10"
+                  Padding="8,2"
+                  IsVisible="{Binding Item.HasUpdate}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="&#x2191;" FontSize="12" Foreground="{DynamicResource AnchorGoldBrush}" />
+                  <TextBlock Foreground="{DynamicResource AnchorGoldBrush}" Text="{Binding Item.StatusText}" />
+                </StackPanel>
+              </Border>
+              <Border
+                  CornerRadius="10"
+                  Padding="8,2"
+                  Background="{DynamicResource AnchorBlueTintBrush}"
+                  IsVisible="{Binding Item.HasVersion}">
+                <TextBlock Foreground="{DynamicResource AnchorBlueBrush}" Text="{Binding Item.VersionText}" />
+              </Border>
+              <Border
+                  Background="{DynamicResource BetaTintBrush}"
+                  CornerRadius="10"
+                  Padding="8,2"
+                  IsVisible="{Binding Item.HasBeta}">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <c:BetaIcon Width="12" Height="12" Foreground="{DynamicResource BetaBrush}" />
+                  <TextBlock Foreground="{DynamicResource BetaBrush}" Text="{Binding Item.BetaText}" />
+                </StackPanel>
+              </Border>
+              <Border
+                  Background="{DynamicResource AnchorGoldTintBrush}"
+                  CornerRadius="10"
+                  Padding="8,2"
+                  IsVisible="{Binding Item.IsOfficialOrigin}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock FontSize="12" Foreground="{DynamicResource AnchorGoldBrush}" Text="{Binding Item.OriginGlyph}" />
+                  <TextBlock Foreground="{DynamicResource AnchorGoldBrush}" Text="{Binding Item.OriginText}" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <!-- Acciones -->
+            <StackPanel
+                Margin="0,10,0,0"
+                Orientation="Horizontal"
+                Spacing="8">
+              <Button
+                  MinWidth="140"
+                  Classes="accent"
+                  Command="{Binding Item.DownloadCommand}"
+                  IsVisible="{Binding Item.ShowDownloadButton}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="&#x2B07;" FontSize="16" />
+                  <TextBlock Text="{l:Loc Key=action.download}" />
+                </StackPanel>
+              </Button>
+              <Button
+                  MinWidth="140"
+                  IsEnabled="False"
+                  IsVisible="{Binding Item.IsAllUpToDate}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="&#x2713;" FontSize="16" />
+                  <TextBlock Text="{l:Loc Key=action.upToDate}" />
+                </StackPanel>
+              </Button>
+              <Button
+                  MinWidth="140"
+                  Classes="accent"
+                  Click="OnDownloadMenuClick"
+                  IsVisible="{Binding Item.ShowDownloadMenu}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="&#x2B07;" FontSize="16" />
+                  <TextBlock Text="{l:Loc Key=action.download}" />
+                  <TextBlock Text="&#x2304;" FontSize="10" />
+                </StackPanel>
+              </Button>
+              <Button
+                  MinWidth="140"
+                  Command="{Binding Item.UpdateAllCommand}"
+                  IsVisible="{Binding Item.ShowUpdateButton}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="&#x2191;" FontSize="16" Foreground="{DynamicResource AnchorGoldBrush}" />
+                  <TextBlock Text="{l:Loc Key=action.updateAll}" />
+                </StackPanel>
+              </Button>
+              <Button
+                  Command="{Binding Item.OpenFolderCommand}"
+                  IsVisible="{Binding Item.HasInstalledVersions}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="&#x2302;" FontSize="16" />
+                  <TextBlock Text="{l:Loc Key=action.openFolder}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Error de acción -->
+      <Border
+          CornerRadius="6"
+          Background="{DynamicResource SystemFillColorCriticalBrush}"
+          Padding="12,8"
+          IsVisible="{Binding Item.HasActionError}">
+        <TextBlock
+            Foreground="White"
+            Text="{Binding Item.ActionError}"
+            TextWrapping="Wrap" />
+      </Border>
+
+      <!-- Archivos -->
+      <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding Item.HasFiles}">
+        <TextBlock
+            VerticalAlignment="Center"
+            FontSize="16"
+            FontWeight="SemiBold"
+            Text="{Binding Item.FilesTitle}" />
+        <Button
+            Grid.Column="1"
+            Click="OnDeleteAllClick"
+            IsVisible="{Binding Item.HasInstalledVersions}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="&#x2715;" FontSize="14" />
+            <TextBlock Text="{l:Loc Key=action.deleteAll}" />
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <ItemsControl
+          Margin="0,0,0,16"
+          ItemsSource="{Binding Item.Files}"
+          IsVisible="{Binding Item.HasFiles}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="vm:PackageFileViewModel">
+            <Grid Margin="0,0,0,8">
+              <Border
+                  Background="{DynamicResource AnchorGoldTintBrush}"
+                  CornerRadius="8"
+                  IsVisible="{Binding HighlightUpdate}" />
+
+              <Expander IsExpanded="False">
+                <Expander.Header>
+                  <Border Padding="0,12">
+                  <Grid
+                      ColumnDefinitions="Auto,*,Auto"
+                      ColumnSpacing="16">
+                    <TextBlock
+                        FontSize="18"
+                        Foreground="{DynamicResource AnchorBlueBrush}"
+                        Text="&#x2261;"
+                        VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            Text="{Binding Label}" />
+                        <Border
+                            Background="#D6D6D6"
+                            CornerRadius="6"
+                            Padding="7,1"
+                            IsVisible="{Binding IsPs4}">
+                          <TextBlock FontSize="12" FontWeight="Bold" Foreground="Black" Text="PS4" />
+                        </Border>
+                        <StackPanel
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            IsVisible="{Binding IsBeta}">
+                          <c:BetaIcon Width="13" Height="13" Foreground="{DynamicResource BetaBrush}" />
+                          <TextBlock
+                              FontWeight="SemiBold"
+                              Foreground="{DynamicResource BetaBrush}"
+                              FontSize="12"
+                              Text="{l:Loc Key=file.beta}" />
+                        </StackPanel>
+                      </StackPanel>
+                      <TextBlock
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                          FontSize="12"
+                          Text="{Binding FileName}"
+                          IsVisible="{Binding HasLabel}" />
+                      <TextBlock
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                          FontSize="12"
+                          Text="{Binding Description}"
+                          IsVisible="{Binding HasDescription}"
+                          TextWrapping="Wrap" />
+                      <TextBlock
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                          FontSize="12">
+                        <Run Text="{Binding StateText}" />
+                        <Run Text="{Binding SizeText}" />
+                      </TextBlock>
+
+                      <StackPanel
+                          Margin="0,6,0,0"
+                          Orientation="Horizontal"
+                          Spacing="8"
+                          IsVisible="{Binding HasBetaOffer}">
+                        <c:BetaIcon
+                            VerticalAlignment="Center"
+                            Width="13"
+                            Height="13"
+                            Foreground="{DynamicResource BetaBrush}" />
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource BetaBrush}"
+                            FontSize="12"
+                            Text="{Binding BetaOfferText}" />
+                        <Button
+                            Padding="4,0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="OnTryBetaClick"
+                            Tag="{Binding}"
+                            IsVisible="{Binding ShowTryBetaButton}">
+                          <TextBlock Foreground="{DynamicResource BetaBrush}" Text="{Binding TryBetaText}" />
+                        </Button>
+                      </StackPanel>
+
+                      <StackPanel
+                          Margin="0,6,0,0"
+                          Spacing="4"
+                          IsVisible="{Binding IsBusy}">
+                        <ProgressBar
+                            MaxWidth="420"
+                            HorizontalAlignment="Stretch"
+                            IsIndeterminate="{Binding ActiveJob.IsIndeterminate, FallbackValue=True}"
+                            Value="{Binding ActiveJob.ProgressValue, FallbackValue=0}"
+                            Minimum="0"
+                            Maximum="100" />
+                        <TextBlock
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            FontSize="12"
+                            Text="{Binding ActiveJob.StatusText, FallbackValue=''}" />
+                      </StackPanel>
+                      <TextBlock
+                          Margin="0,4,0,0"
+                          Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                          FontSize="12"
+                          Text="{Binding ActiveJob.StatusText, FallbackValue=''}"
+                          TextWrapping="Wrap"
+                          IsVisible="{Binding HasJobError}" />
+                    </StackPanel>
+
+                    <StackPanel
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="4">
+                      <TextBlock
+                          Margin="0,0,4,0"
+                          FontSize="16"
+                          Foreground="{DynamicResource AnchorBlueBrush}"
+                          Text="&#x2713;"
+                          ToolTip.Tip="{Binding StateText}"
+                          IsVisible="{Binding IsUpToDate}" />
+                      <Button
+                          Padding="8"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Command="{Binding OpenFolderCommand}"
+                          ToolTip.Tip="{l:Loc Key=action.openFileFolder}"
+                          IsVisible="{Binding HasVersions}">
+                        <TextBlock Text="&#x2302;" FontSize="14" />
+                      </Button>
+                      <Button
+                          Padding="8"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Click="OnDeleteFileClick"
+                          Tag="{Binding}"
+                          ToolTip.Tip="{l:Loc Key=action.deleteFile}"
+                          IsVisible="{Binding HasVersions}">
+                        <TextBlock Text="&#x2715;" FontSize="14" />
+                      </Button>
+                      <Button
+                          Margin="4,0,0,0"
+                          Click="OnBackToStableClick"
+                          Tag="{Binding}"
+                          Content="{l:Loc Key=action.backToStable}"
+                          IsVisible="{Binding ShowBackToStableButton}" />
+                      <Button
+                          Margin="4,0,0,0"
+                          Click="OnFileDownloadClick"
+                          Content="{Binding DownloadText}"
+                          Tag="{Binding}"
+                          IsVisible="{Binding ShowDownloadButton}" />
+                      <Button
+                          Command="{Binding CancelCommand}"
+                          Content="{l:Loc Key=action.cancel}"
+                          IsVisible="{Binding IsBusy}" />
+                      <Button
+                          Command="{Binding RetryCommand}"
+                          Content="{l:Loc Key=action.retry}"
+                          IsVisible="{Binding HasJobError}" />
+                    </StackPanel>
+                  </Grid>
+                  </Border>
+                </Expander.Header>
+
+                <StackPanel Spacing="4" Margin="0,8,0,8">
+                  <TextBlock
+                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                      FontSize="12"
+                      Text="{l:Loc Key=file.versionsTitle}"
+                      IsVisible="{Binding HasVersions}" />
+                  <TextBlock
+                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                      FontSize="12"
+                      Text="{l:Loc Key=file.noVersions}"
+                      IsVisible="{Binding HasNoVersions}" />
+                  <ItemsControl ItemsSource="{Binding Versions}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="vm:FileVersionViewModel">
+                        <Border Padding="0,4">
+                        <Grid
+                            ColumnDefinitions="Auto,*,Auto"
+                            ColumnSpacing="16">
+                          <TextBlock
+                              MinWidth="70"
+                              VerticalAlignment="Center"
+                              FontSize="14"
+                              FontWeight="SemiBold"
+                              Text="{Binding VersionText}" />
+                          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                              <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Text="{Binding Detail}" />
+                              <StackPanel
+                                  Orientation="Horizontal"
+                                  Spacing="4"
+                                  IsVisible="{Binding IsBeta}">
+                                <c:BetaIcon Width="12" Height="12" Foreground="{DynamicResource BetaBrush}" />
+                                <TextBlock
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource BetaBrush}"
+                                    FontSize="12"
+                                    Text="{l:Loc Key=file.beta}" />
+                              </StackPanel>
+                            </StackPanel>
+                            <TextBlock
+                                Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                FontSize="12"
+                                Text="{Binding FolderPath}"
+                                TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                          <StackPanel
+                              Grid.Column="2"
+                              Orientation="Horizontal"
+                              Spacing="4">
+                            <Button
+                                Padding="8"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Command="{Binding OpenCommand}"
+                                ToolTip.Tip="{l:Loc Key=action.openVersionFolder}">
+                              <TextBlock Text="&#x2302;" FontSize="14" />
+                            </Button>
+                            <Button
+                                Padding="8"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Click="OnDeleteVersionClick"
+                                Tag="{Binding}"
+                                ToolTip.Tip="{l:Loc Key=action.deleteVersion}">
+                              <TextBlock Text="&#x2715;" FontSize="14" />
+                            </Button>
+                          </StackPanel>
+                        </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Expander>
+
+              <Border
+                  BorderBrush="{DynamicResource AnchorGoldBrush}"
+                  BorderThickness="1"
+                  CornerRadius="8"
+                  IsHitTestVisible="False"
+                  IsVisible="{Binding HighlightUpdate}" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Información -->
+      <TextBlock FontSize="16" FontWeight="SemiBold" Text="{l:Loc Key=detail.informationTitle}" />
+      <Border
+          CornerRadius="8"
+          Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+          BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+          BorderThickness="1"
+          Padding="16,12">
+        <Grid
+            ColumnDefinitions="Auto,Auto,*"
+            ColumnSpacing="16"
+            RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+            RowSpacing="14">
+          <TextBlock Foreground="{DynamicResource AnchorBlueBrush}" FontSize="15" Text="&#x2299;" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Text="{l:Loc Key=detail.version}" />
+          <TextBlock Grid.Column="2" TextWrapping="Wrap" VerticalAlignment="Center" Text="{Binding Item.StableVersionText}" />
+
+          <c:BetaIcon
+              Grid.Row="1"
+              VerticalAlignment="Center"
+              Width="16"
+              Height="16"
+              Foreground="{DynamicResource BetaBrush}"
+              IsVisible="{Binding Item.HasBeta}" />
+          <TextBlock
+              Grid.Row="1"
+              Grid.Column="1"
+              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+              VerticalAlignment="Center"
+              Text="{l:Loc Key=detail.betaVersion}"
+              IsVisible="{Binding Item.HasBeta}" />
+          <TextBlock
+              Grid.Row="1"
+              Grid.Column="2"
+              TextWrapping="Wrap"
+              VerticalAlignment="Center"
+              Text="{Binding Item.Package.BetaVersion}"
+              IsVisible="{Binding Item.HasBeta}" />
+
+          <TextBlock Grid.Row="2" Foreground="{DynamicResource AnchorBlueBrush}" FontSize="15" Text="&#x263A;" VerticalAlignment="Center" />
+          <TextBlock Grid.Row="2" Grid.Column="1" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Text="{l:Loc Key=detail.author}" />
+          <TextBlock Grid.Row="2" Grid.Column="2" TextWrapping="Wrap" VerticalAlignment="Center" Text="{Binding Item.Author}" />
+
+          <TextBlock Grid.Row="3" Foreground="{DynamicResource AnchorBlueBrush}" FontSize="15" Text="&#x26D3;" VerticalAlignment="Center" />
+          <TextBlock Grid.Row="3" Grid.Column="1" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Text="{l:Loc Key=detail.release}" />
+          <TextBlock Grid.Row="3" Grid.Column="2" TextWrapping="Wrap" VerticalAlignment="Center" Text="{Binding Item.ReleaseLinkText}" />
+
+          <TextBlock Grid.Row="4" Foreground="{DynamicResource AnchorBlueBrush}" FontSize="15" Text="&#x2630;" VerticalAlignment="Center" />
+          <TextBlock Grid.Row="4" Grid.Column="1" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Text="{l:Loc Key=detail.github}" />
+          <TextBlock Grid.Row="4" Grid.Column="2" TextWrapping="Wrap" VerticalAlignment="Center" Text="{Binding Item.RepoText}" />
+
+          <TextBlock Grid.Row="5" Foreground="{DynamicResource AnchorBlueBrush}" FontSize="15" Text="&#x25CD;" VerticalAlignment="Center" />
+          <TextBlock Grid.Row="5" Grid.Column="1" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Text="{l:Loc Key=detail.origin}" />
+          <TextBlock Grid.Row="5" Grid.Column="2" TextWrapping="Wrap" VerticalAlignment="Center" Text="{Binding Item.OriginText}" />
+
+          <TextBlock Grid.Row="6" Foreground="{DynamicResource AnchorBlueBrush}" FontSize="15" Text="&#x2606;" VerticalAlignment="Center" />
+          <TextBlock Grid.Row="6" Grid.Column="1" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Text="{l:Loc Key=detail.id}" />
+          <TextBlock Grid.Row="6" Grid.Column="2" TextWrapping="Wrap" VerticalAlignment="Center" Text="{Binding Item.Id}" />
+        </Grid>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
