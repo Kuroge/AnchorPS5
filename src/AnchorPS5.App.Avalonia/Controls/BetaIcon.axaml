@@ -1,0 +1,12 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="AnchorPS5.App.Controls.BetaIcon">
+  <!-- Icono de beta: un matraz (alembic) en Unicode; escala con el tamaño del control. -->
+  <Viewbox Stretch="Uniform">
+    <TextBlock
+        Text="&#x2697;"
+        FontSize="16"
+        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+  </Viewbox>
+</UserControl>

@@ -1,0 +1,123 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:l="using:AnchorPS5.App.Localization"
+    xmlns:vm="using:AnchorPS5.App.ViewModels"
+    x:Class="AnchorPS5.App.Controls.DownloadsIndicator">
+
+  <!-- Botón de la barra de título: icono de descargas, anillo mientras hay alguna en marcha
+       y contador. Al pulsarlo, la lista con progreso, cancelar y reintentar. -->
+  <Button
+      x:Name="RootButton"
+      Width="40"
+      Height="32"
+      Padding="0"
+      Background="Transparent"
+      BorderThickness="0"
+      ToolTip.Tip="{l:Loc Key=downloads.title}">
+    <Grid>
+      <ProgressBar
+          x:Name="Ring"
+          Width="26"
+          Height="26"
+          IsIndeterminate="True"
+          MinHeight="4"
+          MaxHeight="4"
+          Margin="0"
+          Padding="0"
+          VerticalAlignment="Center"
+          HorizontalAlignment="Center"
+          Opacity="0.9"
+          IsVisible="{Binding ViewModel.HasActive}" />
+      <TextBlock
+          Text="&#x2B07;"
+          FontSize="15"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center" />
+      <Border
+          x:Name="Badge"
+          CornerRadius="9"
+          Background="{DynamicResource AnchorGoldBrush}"
+          MinWidth="18"
+          Height="18"
+          Padding="4,0"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Top"
+          Margin="0,-6,-10,0"
+          IsVisible="{Binding ViewModel.HasActive}">
+        <TextBlock
+            Text="{Binding ViewModel.ActiveCount}"
+            FontSize="10"
+            FontWeight="SemiBold"
+            Foreground="#1C1C1C"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center" />
+      </Border>
+    </Grid>
+
+    <Button.ContextMenu>
+      <ContextMenu x:Name="Menu">
+        <ContextMenu.Items>
+          <TextBlock Text="{l:Loc Key=downloads.title}" FontWeight="SemiBold" Margin="8,6,8,2" />
+          <TextBlock
+              Text="{l:Loc Key=downloads.empty}"
+              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+              Margin="8,2,8,6"
+              IsVisible="{Binding ViewModel.HasNoJobs}" />
+          <ItemsControl ItemsSource="{Binding ViewModel.Jobs}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:DownloadJobViewModel">
+                <Grid Margin="8,6" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                  <StackPanel Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding VersionText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                  <ProgressBar
+                      Grid.Row="1"
+                      Margin="0,4,0,0"
+                      IsIndeterminate="{Binding IsIndeterminate}"
+                      Value="{Binding ProgressValue}"
+                      Minimum="0"
+                      Maximum="100" />
+                  <TextBlock
+                      Grid.Row="2"
+                      Text="{Binding StatusText}"
+                      FontSize="12"
+                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                  <StackPanel
+                      Grid.RowSpan="3"
+                      Grid.Column="1"
+                      Margin="8,0,0,0"
+                      VerticalAlignment="Center"
+                      Orientation="Horizontal">
+                    <Button
+                        Padding="6"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Command="{Binding CancelCommand}"
+                        ToolTip.Tip="{l:Loc Key=action.cancel}"
+                        IsVisible="{Binding IsActive}">
+                      <TextBlock Text="&#x2715;" FontSize="12" />
+                    </Button>
+                    <Button
+                        Padding="6"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Command="{Binding RetryCommand}"
+                        ToolTip.Tip="{l:Loc Key=action.retry}"
+                        IsVisible="{Binding IsFailed}">
+                      <TextBlock Text="&#x27F3;" FontSize="12" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ContextMenu.Items>
+      </ContextMenu>
+    </Button.ContextMenu>
+  </Button>
+</UserControl>

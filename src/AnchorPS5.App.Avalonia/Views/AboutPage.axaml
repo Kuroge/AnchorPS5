@@ -1,0 +1,145 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:AnchorPS5.App.Controls"
+    xmlns:l="using:AnchorPS5.App.Localization"
+    x:Class="AnchorPS5.App.Views.AboutPage">
+
+  <UserControl.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="20,14" />
+    </Style>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.secondary">
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.icon">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Foreground" Value="{DynamicResource AnchorBlueBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- Enlace: botón sin fondo con texto azul; abre la URL de su Tag. -->
+    <Style Selector="Button.link">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource AnchorBlueBrush}" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource AnchorBlueBrush}" />
+    </Style>
+    <Style Selector="Button.link:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer Padding="32,20,32,32">
+    <StackPanel MaxWidth="820" Spacing="20">
+      <!-- Cabecera -->
+      <Border Classes="card" Padding="24">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20">
+          <c:AnchorMark
+              Width="72"
+              Height="72"
+              Foreground="{DynamicResource AnchorBlueBrush}"
+              RingBrush="{DynamicResource AnchorGoldBrush}" />
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+            <TextBlock FontSize="28" FontWeight="SemiBold" Text="AnchorPS5" />
+            <TextBlock Classes="secondary" Text="{l:Loc Key=app.tagline}" />
+            <TextBlock x:Name="VersionText" Foreground="{DynamicResource AnchorBlueBrush}" />
+            <Button x:Name="CheckUpdatesButton" Margin="0,8,0,0" Click="OnCheckUpdatesClick">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="&#x27F3;" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{l:Loc Key=update.check}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Proyecto -->
+      <StackPanel Spacing="8">
+        <TextBlock Classes="section" Text="{l:Loc Key=about.projectTitle}" />
+        <Border Classes="card">
+          <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="14" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12">
+            <TextBlock Classes="icon" Text="&#x263A;" />
+            <TextBlock Grid.Column="1" Classes="secondary" VerticalAlignment="Center" Text="{l:Loc Key=detail.author}" />
+            <Button Grid.Column="2" Classes="link" Content="cheyen2008 (Kuroge)" Tag="https://github.com/Kuroge" Click="OnLinkClick" />
+
+            <TextBlock Grid.Row="1" Classes="icon" Text="&#x2696;" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Classes="secondary" VerticalAlignment="Center" Text="{l:Loc Key=about.license}" />
+            <Button Grid.Row="1" Grid.Column="2" Classes="link" Content="GNU GPL v3" Tag="https://github.com/Kuroge/AnchorPS5/blob/main/LICENSE" Click="OnLinkClick" />
+
+            <TextBlock Grid.Row="2" Classes="icon" Text="&lt;/&gt;" FontSize="13" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Classes="secondary" VerticalAlignment="Center" Text="{l:Loc Key=about.sourceCode}" />
+            <Button Grid.Row="2" Grid.Column="2" Classes="link" Content="github.com/Kuroge/AnchorPS5" Tag="https://github.com/Kuroge/AnchorPS5" Click="OnLinkClick" />
+
+            <TextBlock Grid.Row="3" Classes="icon" Text="&#x2630;" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Classes="secondary" VerticalAlignment="Center" Text="{l:Loc Key=about.catalog}" />
+            <Button Grid.Row="3" Grid.Column="2" Classes="link" Content="github.com/Kuroge/AnchorPS5-catalog" Tag="https://github.com/Kuroge/AnchorPS5-catalog" Click="OnLinkClick" />
+          </Grid>
+        </Border>
+      </StackPanel>
+
+      <!-- Problemas y registro -->
+      <StackPanel Spacing="8">
+        <TextBlock Classes="section" Text="{l:Loc Key=about.problemsTitle}" />
+        <Border Classes="card">
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+            <TextBlock Classes="secondary" VerticalAlignment="Center" Text="{l:Loc Key=about.problemsText}" />
+            <Button Grid.Column="1" VerticalAlignment="Center" Click="OnOpenLogsClick" Content="{l:Loc Key=about.openLogs}" />
+            <Button Grid.Column="2" Classes="link" VerticalAlignment="Center" Content="{l:Loc Key=about.reportIssue}" Tag="https://github.com/Kuroge/AnchorPS5/issues" Click="OnLinkClick" />
+          </Grid>
+        </Border>
+      </StackPanel>
+
+      <!-- Componentes de terceros -->
+      <StackPanel Spacing="8">
+        <TextBlock Classes="section" Text="{l:Loc Key=about.thirdPartyTitle}" />
+        <Border Classes="card">
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <StackPanel Spacing="2">
+                <Button Classes="link" Content="7-Zip" Tag="https://www.7-zip.org/" Click="OnLinkClick" />
+                <TextBlock Classes="secondary" Text="{l:Loc Key=about.sevenZip}" />
+              </StackPanel>
+              <Button Grid.Column="1" VerticalAlignment="Center" Click="OnSevenZipLicenseClick" Content="{l:Loc Key=about.viewLicense}" />
+            </Grid>
+            <StackPanel Spacing="2">
+              <Button Classes="link" Content="Avalonia" Tag="https://github.com/AvaloniaUI/Avalonia" Click="OnLinkClick" />
+              <TextBlock Classes="secondary" Text="{l:Loc Key=about.avalonia}" />
+            </StackPanel>
+            <StackPanel Spacing="2">
+              <Button Classes="link" Content="CommunityToolkit.Mvvm" Tag="https://github.com/CommunityToolkit/dotnet" Click="OnLinkClick" />
+              <TextBlock Classes="secondary" Text="{l:Loc Key=about.mvvmToolkit}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <!-- Créditos -->
+      <StackPanel Spacing="8">
+        <TextBlock Classes="section" Text="{l:Loc Key=about.creditsTitle}" />
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="secondary">
+              <Run FontWeight="SemiBold" Text="Huertas34" />
+              <Run Text="{l:Loc Key=about.creditsHuertas}" />
+            </TextBlock>
+            <TextBlock Classes="secondary" Text="{l:Loc Key=about.creditsAuthors}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,45 @@
+<Application
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="AnchorPS5.App.App">
+
+  <Application.Styles>
+    <FluentTheme />
+  </Application.Styles>
+
+  <!-- Colores de AnchorPS5: el azul de PlayStation y el dorado de las chispas del arranque
+       de PS5. El acento del tema se sustituye por el azul, así botones, selección y barras
+       de progreso usan el color de la app. -->
+  <Application.Resources>
+   <ResourceDictionary>
+    <Color x:Key="AnchorBlueColor">#0070D1</Color>
+    <SolidColorBrush x:Key="AnchorBlueBrush" Color="#0070D1" />
+    <SolidColorBrush x:Key="AnchorGoldBrush" Color="#F2C14E" />
+    <SolidColorBrush x:Key="AnchorBlueTintBrush" Color="#1A0070D1" />
+    <SolidColorBrush x:Key="AnchorGoldTintBrush" Color="#1FD4AC28" />
+    <SolidColorBrush x:Key="BetaBrush" Color="#FFA24A" />
+    <SolidColorBrush x:Key="BetaTintBrush" Color="#26FFA24A" />
+    <Color x:Key="SystemAccentColor">#0070D1</Color>
+
+    <!-- Recursos de tema de WinUI que usan las vistas y que el FluentTheme de Avalonia no
+         define (sin ellos el texto secundario sale negro también en tema oscuro).
+         Valores de la paleta Fluent de WinUI. -->
+    <ResourceDictionary.ThemeDictionaries>
+      <ResourceDictionary x:Key="Light">
+        <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#9E000000" />
+        <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#72000000" />
+        <SolidColorBrush x:Key="CardBackgroundFillColorDefaultBrush" Color="#B3FFFFFF" />
+        <SolidColorBrush x:Key="CardStrokeColorDefaultBrush" Color="#0F000000" />
+        <SolidColorBrush x:Key="SystemFillColorCriticalBrush" Color="#C42B1C" />
+      </ResourceDictionary>
+      <ResourceDictionary x:Key="Dark">
+        <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#C5FFFFFF" />
+        <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#87FFFFFF" />
+        <SolidColorBrush x:Key="CardBackgroundFillColorDefaultBrush" Color="#0DFFFFFF" />
+        <SolidColorBrush x:Key="CardStrokeColorDefaultBrush" Color="#19000000" />
+        <SolidColorBrush x:Key="SystemFillColorCriticalBrush" Color="#FF99A4" />
+      </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+   </ResourceDictionary>
+  </Application.Resources>
+</Application>

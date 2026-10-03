@@ -1,0 +1,22 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="AnchorPS5.App.Controls.AnchorMark">
+
+  <!-- El ancla del icono de la app, en vectorial (rejilla de 32x32). -->
+  <Viewbox Stretch="Uniform">
+    <Canvas Width="32" Height="32">
+      <Path
+          Data="M16,9.5 L16,28 M10,13 L22,13 M5,19 A11,11 0 0 0 27,19 M2,16.5 L5,19 L7.5,16.5 M30,16.5 L27,19 L24.5,16.5"
+          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}"
+          StrokeThickness="2.6" />
+      <Ellipse
+          Canvas.Left="13"
+          Canvas.Top="3"
+          Width="6"
+          Height="6"
+          Stroke="{Binding RingBrush, RelativeSource={RelativeSource AncestorType=UserControl}}"
+          StrokeThickness="2.6" />
+    </Canvas>
+  </Viewbox>
+</UserControl>
