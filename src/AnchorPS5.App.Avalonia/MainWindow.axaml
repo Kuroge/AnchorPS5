@@ -1,0 +1,50 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:AnchorPS5.App.Controls"
+    xmlns:l="using:AnchorPS5.App.Localization"
+    x:Class="AnchorPS5.App.MainWindow"
+    Width="1180"
+    Height="780"
+    MinWidth="720"
+    MinHeight="540"
+    Title="{l:Loc Key=app.title}">
+
+  <Grid RowDefinitions="Auto,*">
+    <!-- Barra de título: el ancla del logo a la izquierda y el indicador de descargas a la derecha. -->
+    <Grid
+        Grid.Row="0"
+        ColumnDefinitions="*,Auto"
+        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+        Height="40">
+      <StackPanel
+          Grid.Column="0"
+          Orientation="Horizontal"
+          Spacing="8"
+          Margin="12,0"
+          VerticalAlignment="Center">
+        <c:AnchorMark
+            Width="18"
+            Height="18"
+            Foreground="{DynamicResource AnchorBlueBrush}"
+            RingBrush="{DynamicResource AnchorGoldBrush}" />
+        <TextBlock
+            Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}"
+            VerticalAlignment="Center"
+            FontWeight="SemiBold" />
+      </StackPanel>
+      <ContentControl
+          x:Name="TitleRightHost"
+          Grid.Column="1"
+          Margin="0,0,8,0"
+          VerticalAlignment="Center" />
+    </Grid>
+
+    <!-- Pantalla actual (setup, guía o armazón principal). -->
+    <ContentControl
+        x:Name="ScreenHost"
+        Grid.Row="1"
+        HorizontalContentAlignment="Stretch"
+        VerticalContentAlignment="Stretch" />
+  </Grid>
+</Window>

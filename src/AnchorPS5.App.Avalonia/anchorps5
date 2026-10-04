@@ -1,0 +1,4 @@
+#!/bin/sh
+# Wrapper launcher for AnchorPS5 (relocatable: finds the binary next to itself).
+HERE="$(cd "$(dirname "$0")" && pwd)"
+exec "$HERE/AnchorPS5" "$@"

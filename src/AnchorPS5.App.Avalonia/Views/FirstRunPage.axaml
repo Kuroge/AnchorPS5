@@ -1,0 +1,16 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:AnchorPS5.App.Controls"
+    x:Class="AnchorPS5.App.Views.FirstRunPage">
+
+  <!-- Primer arranque: panel de marca fijo a la izquierda y los pasos a la derecha. -->
+  <Grid x:Name="Root" Margin="24,4,24,24" ColumnDefinitions="300,*" ColumnSpacing="24">
+    <c:BrandHero x:Name="Hero" />
+    <ContentControl
+        x:Name="StepHost"
+        Grid.Column="1"
+        HorizontalContentAlignment="Stretch"
+        VerticalContentAlignment="Stretch" />
+  </Grid>
+</UserControl>

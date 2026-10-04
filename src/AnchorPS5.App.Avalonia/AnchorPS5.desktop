@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=AnchorPS5
+GenericName=PS5 Homebrew Store
+Comment=Browse, download and update PS5 homebrew apps
+Exec=anchorps5
+Icon=anchorps5
+Terminal=false
+Categories=Utility;
+Keywords=ps5;homebrew;store;
+StartupWMClass=AnchorPS5

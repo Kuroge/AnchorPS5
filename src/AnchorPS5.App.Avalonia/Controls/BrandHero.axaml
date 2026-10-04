@@ -1,0 +1,93 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:AnchorPS5.App.Controls"
+    xmlns:l="using:AnchorPS5.App.Localization"
+    x:Class="AnchorPS5.App.Controls.BrandHero">
+
+  <UserControl.Resources>
+    <RadialGradientBrush x:Key="SparkBrush">
+      <GradientStop Offset="0" Color="#FFFFF4C8" />
+      <GradientStop Offset="0.35" Color="#FFF2C14E" />
+      <GradientStop Offset="1" Color="#00D4AC28" />
+    </RadialGradientBrush>
+    <RadialGradientBrush x:Key="BokehBrush">
+      <GradientStop Offset="0" Color="#664DA3FF" />
+      <GradientStop Offset="0.7" Color="#334DA3FF" />
+      <GradientStop Offset="1" Color="#004DA3FF" />
+    </RadialGradientBrush>
+  </UserControl.Resources>
+
+  <Border
+      BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+      BorderThickness="1"
+      CornerRadius="12">
+    <Border.Background>
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#330070D1" />
+        <GradientStop Offset="0.55" Color="#00000000" />
+        <GradientStop Offset="1" Color="#26D4AC28" />
+      </LinearGradientBrush>
+    </Border.Background>
+
+    <Grid Margin="24" RowDefinitions="*,Auto">
+      <Viewbox
+          MaxWidth="250"
+          MaxHeight="250"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          Stretch="Uniform">
+        <Grid Width="250" Height="250">
+          <!-- Bokeh -->
+          <Ellipse x:Name="Bokeh1" Width="70" Height="70" Margin="10,20,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Fill="{StaticResource BokehBrush}" />
+          <Ellipse x:Name="Bokeh2" Width="46" Height="46" Margin="0,0,14,40" HorizontalAlignment="Right" VerticalAlignment="Bottom" Fill="{StaticResource BokehBrush}" />
+          <Ellipse x:Name="Bokeh3" Width="30" Height="30" Margin="0,30,30,0" HorizontalAlignment="Right" VerticalAlignment="Top" Fill="{StaticResource BokehBrush}" />
+
+          <!-- Halo -->
+          <Ellipse x:Name="Glow" Opacity="0.8" RenderTransformOrigin="50%,50%">
+            <Ellipse.Fill>
+              <RadialGradientBrush>
+                <GradientStop Offset="0" Color="#990070D1" />
+                <GradientStop Offset="0.6" Color="#330070D1" />
+                <GradientStop Offset="1" Color="#000070D1" />
+              </RadialGradientBrush>
+            </Ellipse.Fill>
+          </Ellipse>
+
+          <!-- Chispas -->
+          <Canvas>
+            <Ellipse x:Name="Spark1" Canvas.Left="44" Canvas.Top="58" Width="14" Height="14" Fill="{StaticResource SparkBrush}" Opacity="0" />
+            <Ellipse x:Name="Spark2" Canvas.Left="190" Canvas.Top="70" Width="10" Height="10" Fill="{StaticResource SparkBrush}" Opacity="0" />
+            <Ellipse x:Name="Spark3" Canvas.Left="200" Canvas.Top="170" Width="16" Height="16" Fill="{StaticResource SparkBrush}" Opacity="0" />
+            <Ellipse x:Name="Spark4" Canvas.Left="34" Canvas.Top="178" Width="10" Height="10" Fill="{StaticResource SparkBrush}" Opacity="0" />
+            <Ellipse x:Name="Spark5" Canvas.Left="120" Canvas.Top="18" Width="12" Height="12" Fill="{StaticResource SparkBrush}" Opacity="0" />
+            <Ellipse x:Name="Spark6" Canvas.Left="128" Canvas.Top="218" Width="9" Height="9" Fill="{StaticResource SparkBrush}" Opacity="0" />
+          </Canvas>
+
+          <!-- Ancla -->
+          <c:AnchorMark
+              x:Name="Anchor"
+              Width="132"
+              Height="132"
+              Foreground="{DynamicResource AnchorBlueBrush}"
+              RingBrush="{DynamicResource AnchorGoldBrush}" />
+        </Grid>
+      </Viewbox>
+
+      <StackPanel Grid.Row="1" Spacing="6">
+        <TextBlock FontSize="28" FontWeight="SemiBold" Text="{l:Loc Key=app.title}" />
+        <TextBlock
+            x:Name="VersionText"
+            Margin="0,-4,0,0"
+            FontSize="12"
+            Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+        <TextBlock
+            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+            TextWrapping="Wrap"
+            Text="{l:Loc Key=app.tagline}" />
+        <!-- Puntos de progreso (equivalente al PipsPager de WinUI) -->
+        <StackPanel x:Name="Pips" Margin="0,8,0,0" Orientation="Horizontal" Spacing="8" IsVisible="False" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

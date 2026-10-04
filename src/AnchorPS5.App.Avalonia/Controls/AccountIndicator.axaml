@@ -1,0 +1,61 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:AnchorPS5.App.Controls"
+    xmlns:l="using:AnchorPS5.App.Localization"
+    x:Class="AnchorPS5.App.Controls.AccountIndicator">
+
+  <!-- Botón de la barra de título con la foto de GitHub (o una silueta sin sesión).
+       Al pulsarlo, un resumen del perfil e iniciar / cerrar sesión. -->
+  <Button
+      x:Name="AccountButton"
+      Width="40"
+      Height="32"
+      Padding="0"
+      Background="Transparent"
+      BorderThickness="0"
+      HorizontalContentAlignment="Center"
+      VerticalContentAlignment="Center">
+    <c:Avatar x:Name="SmallPicture" Width="22" Height="22" />
+
+    <Button.Flyout>
+      <Flyout Placement="BottomEdgeAlignedRight">
+        <StackPanel Width="300" Spacing="12">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <c:Avatar x:Name="LargePicture" Width="56" Height="56" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+              <TextBlock x:Name="DisplayNameText" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+              <Button
+                  x:Name="ProfileLink"
+                  Padding="0"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Foreground="{DynamicResource AnchorBlueBrush}"
+                  ToolTip.Tip="{l:Loc Key=github.viewProfile}"
+                  Click="OnProfileClick" />
+            </StackPanel>
+          </Grid>
+
+          <TextBlock
+              x:Name="DetailText"
+              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+              TextWrapping="Wrap" />
+
+          <Button
+              x:Name="SignInButton"
+              Classes="accent"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Center"
+              Click="OnSignInClick"
+              Content="{l:Loc Key=github.signIn}" />
+          <Button
+              x:Name="SignOutButton"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Center"
+              Click="OnSignOutClick"
+              Content="{l:Loc Key=github.signOut}" />
+        </StackPanel>
+      </Flyout>
+    </Button.Flyout>
+  </Button>
+</UserControl>
