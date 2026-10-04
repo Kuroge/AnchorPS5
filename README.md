@@ -81,10 +81,10 @@ descargas. También puedes buscarlas en **Acerca de → Buscar actualizaciones**
 
 No. AnchorPS5 funciona igual sin sesión:
 
-- **Sin sesión:** el catálogo oficial publica cada hora un índice con los ficheros de
+- **Sin sesión:** el catálogo oficial publica varias veces al día un índice con los ficheros de
   todas sus apps y la app lo descarga de una vez, así que no te afecta el límite de
-  GitHub (60 consultas por hora). Una versión recién publicada puede tardar hasta una
-  hora y media en aparecer; si no quieres esperar, pulsa **Recargar** (te avisará de que
+  GitHub (60 consultas por hora). Una versión recién publicada puede tardar unas horas
+  en aparecer; si no quieres esperar, pulsa **Recargar** (te avisará de que
   esa recarga sí gasta consultas).
 - **Con sesión:** la app pregunta a GitHub directamente, con datos más al día (como
   mucho media hora) y un límite de 5000 consultas por hora. El inicio de sesión no pide

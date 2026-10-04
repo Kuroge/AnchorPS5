@@ -81,9 +81,9 @@ from **About → Check for updates**.
 
 No. AnchorPS5 works the same without a session:
 
-- **Without a session:** the official catalog publishes an hourly index with the files of
+- **Without a session:** the official catalog publishes an index several times a day with the files of
   all its apps and the app downloads it in one go, so GitHub's limit (60 requests per
-  hour) doesn't affect you. A just-published version may take up to an hour and a half to
+  hour) doesn't affect you. A just-published version may take a few hours to
   show up; if you don't want to wait, press **Reload** (it warns you that this reload does
   use requests).
 - **Signed in:** the app asks GitHub directly, with fresher data (half an hour at most)
