@@ -25,7 +25,8 @@ public sealed record InstalledFile(
     bool Verified,
     DateTimeOffset? DownloadedAt,
     bool IsPrerelease,
-    DateTimeOffset? ReleasedAt = null);
+    DateTimeOffset? ReleasedAt = null,
+    string? DownloadUrl = null);
 
 /// <summary>
 /// Metadatos que se guardan dentro de cada carpeta de versión (.anchorps5.json).

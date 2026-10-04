@@ -33,8 +33,12 @@ public sealed record ResolvedPackage(
     string? StableVersion,
     string? BetaVersion,
     Uri? ReleaseUrl,
-    GitHub.GitHubStatus Source)
+    GitHub.GitHubStatus Source,
+    Uri? BetaReleaseUrl = null)
 {
+    /// <summary>Página de la última release estable (null si la app solo publica betas).</summary>
+    public Uri? StableReleaseUrl => StableVersion is not null ? ReleaseUrl : null;
+
     public static ResolvedPackage Empty(GitHub.GitHubStatus source) => new([], null, null, null, source);
 
     /// <summary>Versión a mostrar: la estable o, si solo hay beta, la beta.</summary>

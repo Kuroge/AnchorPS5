@@ -94,7 +94,8 @@ public sealed class PackageResolver
         }
 
         var releaseUrl = Uri.TryCreate((stable ?? beta)?.HtmlUrl, UriKind.Absolute, out var url) ? url : null;
-        return new ResolvedPackage(files, stable?.Version, beta?.Version, releaseUrl, source);
+        var betaUrl = Uri.TryCreate(beta?.HtmlUrl, UriKind.Absolute, out var b) ? b : null;
+        return new ResolvedPackage(files, stable?.Version, beta?.Version, releaseUrl, source, betaUrl);
     }
 
     /// <summary>Descarga única declarada en el catálogo (apps fuera de GitHub).</summary>

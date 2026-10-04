@@ -79,5 +79,14 @@ public sealed partial class CatalogPage : Page
         return result == ContentDialogResult.Primary || await GitHubAccountDialogs.SignInAsync(XamlRoot, ActualTheme);
     }
 
+    /// <summary>"Actualizar todo" de Actualizaciones: una sola pregunta para todas las apps.</summary>
+    private async void OnUpdateAllAppsClick(object sender, RoutedEventArgs e)
+    {
+        var files = ViewModel.UpdatableItems.SelectMany(i => i.OutdatedFiles).ToList();
+        var removeOld = await UpdateDialogs.AskRemoveOldAsync(XamlRoot, ActualTheme, CatalogItemViewModel.OldVersionCount(files));
+        if (removeOld is { } remove)
+            ViewModel.UpdateAllApps(remove);
+    }
+
     private static string Loc(string key) => App.Localization.Get(key);
 }

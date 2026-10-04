@@ -43,8 +43,13 @@ Homebrew Browser, but for PS5.
 - ⬇️ **Verified downloads:** every file comes from its author's official GitHub release
   and is checked against its SHA-256. `.zip`, `.7z` and `.rar` files are extracted
   automatically.
-- 🔄 **Per-file updates** (`0.1 → 0.2`) and an **Update all** button.
+  **Download all** gets every file of an app you don't have yet in one go.
+- 🔄 **Per-file updates** (`0.1 → 0.2`, with each version's date) and **Update all**, per
+  app or for all of them at once. When updating you can delete the previous versions: they
+  are only deleted once the new one has been downloaded and checked.
 - 🗂️ **Version history:** keeps previous versions so you can go back.
+- ⓘ **File details:** version, channel, release and download dates, size, SHA-256, source
+  and location.
 - 🧪 **Optional betas:** try a file's beta and go back to stable whenever you want.
 - 🏷️ **PS4** tag on files that are not for PS5.
 - ➕ **Your own apps:** add apps to your copy of the catalog; they're kept when the

@@ -17,7 +17,11 @@ namespace AnchorPS5.App.ViewModels;
 public interface IPackageActions
 {
     /// <summary>Descarga un fichero concreto (nunca uno que ya tengas en esa versión).</summary>
-    void Download(CatalogItemViewModel item, PackageFileViewModel row, PackageFile file);
+    /// <param name="removeOld">
+    /// Al actualizar: borrar sus versiones anteriores del mismo canal, pero solo cuando la nueva
+    /// esté descargada y comprobada. Si falla o se cancela, no se borra nada.
+    /// </param>
+    void Download(CatalogItemViewModel item, PackageFileViewModel row, PackageFile file, bool removeOld = false);
 
     /// <summary>Cambia el canal de un fichero (estable/beta) y vuelve a calcular su estado.</summary>
     void SetChannel(CatalogItemViewModel item, PackageFileViewModel row, FileChannel channel);
@@ -59,7 +63,6 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
             ? localization.Get("detail.noDescription")
             : entry.App.Description.Get(localization.CurrentLanguage);
         BetaText = package.BetaVersion is { } beta ? localization.Format("file.betaChip", VersionLabel.Format(beta)) : string.Empty;
-        FilesTitle = package.DisplayVersion is { } v ? localization.Format("detail.filesTitle", v) : localization.Get("detail.filesTitleNoVersion");
         SetStatus(status);
     }
 
@@ -72,16 +75,31 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
     public string Name => Entry.App.Name;
     public string Author => Entry.App.Author;
     public string Description { get; }
-    public string FilesTitle { get; }
 
     /// <summary>Versión publicada: la de GitHub o, si no hay, la del catálogo.</summary>
     public string Version => Package.DisplayVersion ?? Entry.App.Version;
     public string VersionText => VersionLabel.Format(Version);
+
+    /// <summary>Chips de la cabecera de la ficha: versión con su fecha ("v0.21.1 (20/08/2026)").</summary>
+    public string VersionChipText => VersionDates.WithDate(_localization, Version, ReleaseDate(prerelease: Package.StableVersion is null));
+
+    public string BetaChipText => Package.BetaVersion is { } beta
+        ? _localization.Format("file.betaChip", VersionDates.WithDate(_localization, beta, ReleaseDate(prerelease: true)))
+        : string.Empty;
     /// <summary>Chip de versión: no se muestra si la única versión es una beta (ya sale en su chip).</summary>
     public bool HasVersion => !string.IsNullOrWhiteSpace(Version) && !(HasBeta && Package.StableVersion is null);
 
     /// <summary>Versión estable para Información ("—" si la app solo publica betas).</summary>
-    public string StableVersionText => HasBeta && Package.StableVersion is null ? "—" : Version;
+    public string StableVersionText => HasBeta && Package.StableVersion is null
+        ? "—"
+        : VersionDates.PlainWithDate(_localization, Version, ReleaseDate(prerelease: false));
+
+    /// <summary>Versión beta con su fecha, para Información.</summary>
+    public string BetaVersionText => VersionDates.PlainWithDate(_localization, Package.BetaVersion, ReleaseDate(prerelease: true));
+
+    // Fecha de publicación de la última release estable o beta (la de sus ficheros).
+    private DateTimeOffset? ReleaseDate(bool prerelease) =>
+        Package.Files.Where(f => f.IsPrerelease == prerelease).Select(f => f.ReleasedAt).Where(d => d is not null).Max();
 
     public bool HasBeta => Package.BetaVersion is not null;
     public string BetaText { get; }
@@ -89,6 +107,13 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
     /// <summary>Tamaño del fichero principal (si solo hay uno).</summary>
 
     public bool HasReleaseUrl => Package.ReleaseUrl is not null;
+
+    /// <summary>Información: la versión enlaza a su release (estable y beta por separado).</summary>
+    public Uri? StableReleaseUrl => Package.StableReleaseUrl;
+    public bool HasStableReleaseUrl => StableReleaseUrl is not null;
+    public bool HasNoStableReleaseUrl => StableReleaseUrl is null;
+    public bool HasBetaReleaseUrl => HasBeta && Package.BetaReleaseUrl is not null;
+    public bool HasBetaWithoutReleaseUrl => HasBeta && Package.BetaReleaseUrl is null;
 
     /// <summary>Repo de GitHub de la app (si lo tiene).</summary>
     public GitHubRepoRef? Repo => GitHubRepoRef.TryParse(Entry.App.Repo, out var repo) ? repo : null;
@@ -129,10 +154,6 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
     public bool HasAuthorUrl => AuthorUrl is not null;
     public bool HasNoAuthorUrl => AuthorUrl is null;
 
-    /// <summary>"owner/repo · v1.2" o, sin GitHub, un guion.</summary>
-    public string ReleaseLinkText => Package.ReleaseUrl is { } url
-        ? url.AbsolutePath.Trim('/').Replace("/releases/tag/", " · ")
-        : "—";
 
 
     /// <summary>Carpeta de la app dentro de la de descargas.</summary>
@@ -155,7 +176,7 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
     // ---- Estado en la biblioteca ----
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsDownloaded), nameof(HasUpdate), nameof(IsNotDownloaded), nameof(ShowDownloadButton), nameof(ShowDownloadMenu), nameof(ShowUpdateButton))]
+    [NotifyPropertyChangedFor(nameof(IsDownloaded), nameof(HasUpdate), nameof(IsNotDownloaded), nameof(ShowDownloadButton), nameof(ShowDownloadMenu), nameof(ShowUpdateButton), nameof(ShowUpdateMenu))]
     public partial PackageState State { get; private set; }
 
     /// <summary>Resumen corto: "No descargada", "Descargada · v1.0", "0.21 → 0.21.1", "2 actualizaciones".</summary>
@@ -183,7 +204,8 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
     public bool IsBusy => ActiveJob is { IsActive: true };
     public bool IsIdle => !IsBusy;
     public bool ShowDownloadButton => IsNotDownloaded && HasSingleFile && !IsAllUpToDate;
-    public bool ShowDownloadMenu => HasManyFiles && !IsAllUpToDate;
+    /// <summary>Menú "Descargar ▾" (varios ficheros): solo si te falta alguno (los solo-beta no cuentan).</summary>
+    public bool ShowDownloadMenu => HasManyFiles && MissingFiles.Any(f => !f.IsBetaOnly);
 
     /// <summary>Tienes todos los ficheros publicados en su última versión (los solo-beta no cuentan).</summary>
     public bool IsAllUpToDate
@@ -194,7 +216,11 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
             return files.Count > 0 && files.All(f => f.IsUpToDate);
         }
     }
-    public bool ShowUpdateButton => HasUpdate;
+    /// <summary>Un solo fichero: botón "Actualizar". Varios: botón partido "Actualizar todo (N) ▾".</summary>
+    public bool ShowUpdateButton => HasUpdate && !HasManyFiles;
+    public bool ShowUpdateMenu => HasUpdate && HasManyFiles;
+
+    public string UpdateAllText => _localization.Format("action.updateAllCount", OutdatedFiles.Count);
 
     /// <summary>Error de la última acción (borrar, abrir carpeta…), aparte de los de descarga.</summary>
     [ObservableProperty]
@@ -218,11 +244,31 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
             DownloadFile(file);
     }
 
-    /// <summary>Descarga la última versión (en su canal) de cada fichero desactualizado.</summary>
-    [RelayCommand]
-    private void UpdateAll()
+    /// <summary>Versiones anteriores que se borrarían al actualizar estos ficheros (para la pregunta).</summary>
+    public static int OldVersionCount(IEnumerable<PackageFileViewModel> files) => files.Sum(f => f.OldVersionsInChannel.Count);
+
+    /// <summary>Actualiza estos ficheros a su última versión (en su canal).</summary>
+    public void Update(IEnumerable<PackageFileViewModel> files, bool removeOld)
     {
-        foreach (var file in Files.Where(f => f.HasUpdate).ToList())
+        ActionError = string.Empty;
+        foreach (var file in files.Where(f => f.HasUpdate && f.File is not null).ToList())
+            _actions.Download(this, file, file.File!, removeOld);
+    }
+
+    /// <summary>Ficheros que no tienes (menú "Descargar ▾").</summary>
+    public IReadOnlyList<PackageFileViewModel> MissingFiles =>
+        DownloadableFiles.Where(f => f.Status.State == FileState.NotDownloaded).ToList();
+
+    /// <summary>Ficheros que tienes con versión nueva en su canal (menú "Actualizar ▾").</summary>
+    public IReadOnlyList<PackageFileViewModel> OutdatedFiles => Files.Where(f => f.HasUpdate).ToList();
+
+    /// <summary>"Descargar todo": lo que falta, menos los solo-beta (piden confirmación y van uno a uno).</summary>
+    public IReadOnlyList<PackageFileViewModel> DownloadAllFiles =>
+        MissingFiles.Where(f => !f.IsBusy && !f.NeedsBetaWarning).ToList();
+
+    public void DownloadAll()
+    {
+        foreach (var file in DownloadAllFiles)
             DownloadFile(file);
     }
 
@@ -320,6 +366,9 @@ public sealed partial class CatalogItemViewModel : ObservableObject, IFileAction
         OnPropertyChanged(nameof(IsAllUpToDate));
         OnPropertyChanged(nameof(ShowDownloadButton));
         OnPropertyChanged(nameof(ShowDownloadMenu));
+        OnPropertyChanged(nameof(ShowUpdateButton));
+        OnPropertyChanged(nameof(ShowUpdateMenu));
+        OnPropertyChanged(nameof(UpdateAllText));
         RefreshActiveJob();
     }
 

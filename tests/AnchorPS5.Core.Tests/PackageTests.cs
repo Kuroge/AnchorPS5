@@ -79,6 +79,24 @@ public sealed class PackageResolverTests
     }
 
     [Fact]
+    public void ReleaseLinks_ForStableAndBeta()
+    {
+        GitHubRelease WithPage(GitHubRelease r) { r.HtmlUrl = "https://github.com/o/r/releases/tag/" + r.TagName; return r; }
+
+        var both = PackageResolver.FromReleases(Ftpsrv,
+        [
+            WithPage(Release("v0.22-beta1", true, 25, "ftpsrv-ps5.elf")),
+            WithPage(Release("v0.21.1", false, 20, "ftpsrv-ps5.elf")),
+        ], GitHubStatus.Ok);
+        Assert.EndsWith("/v0.21.1", both.StableReleaseUrl!.AbsoluteUri);
+        Assert.EndsWith("/v0.22-beta1", both.BetaReleaseUrl!.AbsoluteUri);
+
+        var betaOnly = PackageResolver.FromReleases(Ftpsrv, [WithPage(Release("v0.3-beta", true, 25, "ftpsrv-ps5.elf"))], GitHubStatus.Ok);
+        Assert.Null(betaOnly.StableReleaseUrl);
+        Assert.EndsWith("/v0.3-beta", betaOnly.BetaReleaseUrl!.AbsoluteUri);
+    }
+
+    [Fact]
     public void NewerBeta_IsAddedAndMarked_OlderBetaIgnored()
     {
         var withNewer = PackageResolver.FromReleases(Ftpsrv,

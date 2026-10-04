@@ -16,6 +16,9 @@ public sealed class AppState
 
     /// <summary>"No volver a mostrar" en el aviso de recargar sin sesión de GitHub.</summary>
     public bool HideReloadWarning { get; set; }
+
+    /// <summary>"No volver a preguntar" al actualizar: se conservan siempre las versiones anteriores.</summary>
+    public bool KeepOldVersionsOnUpdate { get; set; }
 }
 
 /// <summary>Preferencias de avisos que el usuario ha pedido no volver a ver.</summary>
@@ -27,6 +30,15 @@ public sealed class WarningPreferences(AppStateStore store)
         store.Update<bool>((state, _) =>
         {
             state.HideReloadWarning = true;
+            return (true, true);
+        });
+
+    public bool KeepOldVersionsWithoutAsking => store.Read(state => state.KeepOldVersionsOnUpdate);
+
+    public void KeepOldVersionsFromNowOn() =>
+        store.Update<bool>((state, _) =>
+        {
+            state.KeepOldVersionsOnUpdate = true;
             return (true, true);
         });
 }

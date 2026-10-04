@@ -28,6 +28,9 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
     // Versiones oficiales que el usuario ha dejado para "más tarde" en esta sesión.
     private readonly HashSet<string> _postponedOfficial = [];
 
+    /// <summary>Descargas que, al terminar bien, borran las versiones anteriores de su fichero.</summary>
+    private readonly Dictionary<DownloadJobViewModel, IReadOnlyList<InstalledVersion>> _removeAfter = [];
+
     // Nuevas en esta sesión: se mantienen aunque se recargue.
     private readonly HashSet<string> _newIds = new(StringComparer.OrdinalIgnoreCase);
     private List<CatalogItemViewModel> _all = [];
@@ -150,12 +153,14 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
 
     partial void OnSortIndexChanged(int value) => ApplyFilter();
 
+    /// <summary>Apps con alguna actualización (botón "Actualizar todo" de Actualizaciones).</summary>
+    public IReadOnlyList<CatalogItemViewModel> UpdatableItems => _all.Where(i => i.HasUpdate).ToList();
+
     /// <summary>Actualiza todos los ficheros desactualizados de todas las apps.</summary>
-    [RelayCommand]
-    private void UpdateAllApps()
+    public void UpdateAllApps(bool removeOld)
     {
-        foreach (var item in _all.Where(i => i.HasUpdate).ToList())
-            item.UpdateAllCommand.Execute(null);
+        foreach (var item in UpdatableItems)
+            item.Update(item.OutdatedFiles, removeOld);
     }
 
     partial void OnFilterChanged(CatalogFilter value)
@@ -390,7 +395,7 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
 
     // ---- Acciones sobre paquetes ----
 
-    public void Download(CatalogItemViewModel item, PackageFileViewModel row, PackageFile file)
+    public void Download(CatalogItemViewModel item, PackageFileViewModel row, PackageFile file, bool removeOld = false)
     {
         // Red de seguridad: nunca se vuelve a descargar un fichero en una versión que ya tienes.
         var alreadyHave = row.InstalledVersions.Any(v =>
@@ -402,7 +407,10 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
             return;
         }
 
+        var old = removeOld ? row.OldVersionsInChannel : [];
         row.ActiveJob = _downloads.Start(item.Entry.App, file);
+        if (old.Count > 0)
+            _removeAfter[row.ActiveJob] = old;
         item.RefreshActiveJob();
     }
 
@@ -465,7 +473,38 @@ public sealed partial class CatalogViewModel : ObservableObject, IPackageActions
                 file.ActiveJob = null;
         }
 
+        if (_removeAfter.Remove(job, out var old) && job.Phase == Core.Downloads.DownloadPhase.Completed)
+            await RemoveOldVersionsAsync(item, job, old);
+
         await RefreshItemAsync(item);
+    }
+
+    /// <summary>
+    /// Control de daños: antes de borrar lo anterior se comprueba en disco que la versión nueva
+    /// está (y verificada, si GitHub publica su SHA-256). Si no, se conserva todo.
+    /// </summary>
+    private async Task RemoveOldVersionsAsync(CatalogItemViewModel item, DownloadJobViewModel job, IReadOnlyList<InstalledVersion> old)
+    {
+        var target = job.Job.File;
+        try
+        {
+            await Task.Run(() =>
+            {
+                var library = _library.Scan();
+                var installed = library.GetVersions(item.Entry.App)
+                    .Where(v => string.Equals(v.Version, target.Version, StringComparison.OrdinalIgnoreCase))
+                    .SelectMany(v => v.Files)
+                    .FirstOrDefault(f => string.Equals(f.Key, target.Key, StringComparison.OrdinalIgnoreCase));
+                if (installed is null || (!string.IsNullOrEmpty(target.Sha256) && !installed.Verified))
+                    return;
+
+                _library.DeleteVersions(old.Where(v => !string.Equals(v.Version, target.Version, StringComparison.OrdinalIgnoreCase)).ToList());
+            });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            item.ActionError = _localization.Get("action.deleteError");
+        }
     }
 
     /// <summary>Vuelve a leer del disco el estado de una app tras descargar o borrar.</summary>

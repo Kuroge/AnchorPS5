@@ -7,6 +7,35 @@ Todos los cambios importantes de AnchorPS5. El formato sigue
 [SemVer](https://semver.org/lang/es/). Mientras la app sea **alpha**, puede cambiar mucho
 de una versión a otra.
 
+## [Sin publicar]
+
+### Añadido
+
+- **Borrar versiones anteriores al actualizar:** cualquier forma de actualizar (un fichero,
+  «Actualizar todo» de una app o de la sección Actualizaciones) pregunta si quieres borrar las
+  versiones anteriores o conservarlas, con «No volver a preguntar» (conservarlas siempre). Lo
+  anterior solo se borra cuando la versión nueva está descargada y comprobada; si algo falla,
+  se conserva.
+- **Descargar todo:** en las apps con varios ficheros, el menú «Descargar» empieza por
+  «Descargar todo», que baja de una vez los ficheros que aún no tienes.
+- **Fecha de cada versión:** junto a cada versión se muestra cuándo se publicó (en las
+  etiquetas de versión de la cabecera de la ficha, los ficheros, la beta disponible, el
+  historial de versiones y la tarjeta de Información).
+- **Botón ⓘ en cada fichero descargado y en cada versión de su historial:** versión, canal
+  (estable o beta), fecha de publicación, fecha y hora de descarga, tamaño en disco, si se
+  comprobó el SHA-256, el propio SHA-256, de dónde se descargó y dónde está guardado.
+
+### Cambiado
+
+- **Descargar y actualizar, por separado:** en las apps con varios ficheros, «Descargar» solo
+  descarga lo que no tienes (lo que ya tienes sale deshabilitado, aunque esté desactualizado)
+  y «Actualizar todo (N)» es un botón partido: al pulsarlo actualiza todo y con su flecha
+  eliges fichero a fichero (con la versión que tienes y la nueva).
+- En **Información**, la versión (y la versión beta) enlaza directamente a su release en
+  GitHub; desaparece la fila "Último release", que repetía lo mismo.
+- La lista de ficheros de la ficha se titula solo **Archivos**: cada fichero ya indica su
+  propia versión (antes el título mostraba la última versión publicada y confundía).
+
 ## [0.1.0-alpha.2] — 2026-10-02
 
 ### Cambiado

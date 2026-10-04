@@ -30,6 +30,35 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
+        <!-- Panel del botón ⓘ (ficha del fichero e historial) -->
+        <DataTemplate x:Key="FileDetailsTemplate" x:DataType="vm:FileDetails">
+            <Grid
+                Width="400"
+                ColumnDefinitions="Auto,*"
+                ColumnSpacing="16"
+                RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                RowSpacing="8">
+                <TextBlock Grid.ColumnSpan="2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind FileName}" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=info.version}" />
+                <TextBlock Grid.Row="1" Grid.Column="1" IsTextSelectionEnabled="True" Text="{x:Bind Version}" />
+                <TextBlock Grid.Row="2" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=info.channel}" />
+                <TextBlock Grid.Row="2" Grid.Column="1" IsTextSelectionEnabled="True" Text="{x:Bind Channel}" />
+                <TextBlock Grid.Row="3" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=info.releasedAt}" />
+                <TextBlock Grid.Row="3" Grid.Column="1" IsTextSelectionEnabled="True" Text="{x:Bind ReleasedAt}" />
+                <TextBlock Grid.Row="4" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=info.downloadedAt}" />
+                <TextBlock Grid.Row="4" Grid.Column="1" IsTextSelectionEnabled="True" Text="{x:Bind DownloadedAt}" />
+                <TextBlock Grid.Row="5" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=info.size}" />
+                <TextBlock Grid.Row="5" Grid.Column="1" IsTextSelectionEnabled="True" Text="{x:Bind SizeOnDisk}" />
+                <TextBlock Grid.Row="6" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=info.verified}" />
+                <TextBlock Grid.Row="6" Grid.Column="1" IsTextSelectionEnabled="True" Text="{x:Bind Verified}" />
+                <TextBlock Grid.Row="7" Style="{StaticResource InfoLabelStyle}" Text="SHA-256" />
+                <TextBlock Grid.Row="7" Grid.Column="1" FontFamily="Cascadia Mono, Consolas" FontSize="12" IsTextSelectionEnabled="True" Text="{x:Bind Sha256}" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="8" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=info.origin}" />
+                <TextBlock Grid.Row="8" Grid.Column="1" FontSize="12" IsTextSelectionEnabled="True" Text="{x:Bind Origin}" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="9" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=info.path}" />
+                <TextBlock Grid.Row="9" Grid.Column="1" FontSize="12" IsTextSelectionEnabled="True" Text="{x:Bind Location}" TextWrapping="Wrap" />
+            </Grid>
+        </DataTemplate>
     </Page.Resources>
 
     <ScrollViewer>
@@ -151,7 +180,7 @@
                                 </StackPanel>
                             </Border>
                             <Border Style="{StaticResource ChipStyle}" Visibility="{x:Bind Item.HasVersion}">
-                                <TextBlock Foreground="{ThemeResource AnchorBlueBrush}" Text="{x:Bind Item.VersionText}" />
+                                <TextBlock Foreground="{ThemeResource AnchorBlueBrush}" Text="{x:Bind Item.VersionChipText}" />
                             </Border>
                             <Border
                                 Background="{ThemeResource BetaTintBrush}"
@@ -162,7 +191,7 @@
                                         Width="12"
                                         Height="12"
                                         Foreground="{ThemeResource BetaBrush}" />
-                                    <TextBlock Foreground="{ThemeResource BetaBrush}" Text="{x:Bind Item.BetaText}" />
+                                    <TextBlock Foreground="{ThemeResource BetaBrush}" Text="{x:Bind Item.BetaChipText}" />
                                 </StackPanel>
                             </Border>
                             <!-- Origen: oficial (dorado), añadida por ti (naranja) u otro catálogo -->
@@ -247,19 +276,40 @@
                                         Placement="BottomEdgeAlignedLeft" />
                                 </DropDownButton.Flyout>
                             </DropDownButton>
+                            <!-- Un solo fichero: Actualizar -->
                             <Button
                                 MinWidth="140"
-                                AutomationProperties.Name="{l:Loc Key=action.updateAll}"
-                                Command="{x:Bind Item.UpdateAllCommand}"
+                                AutomationProperties.Name="{l:Loc Key=action.updateFile}"
+                                Click="OnUpdateAllClick"
                                 Visibility="{x:Bind Item.ShowUpdateButton, Mode=OneWay}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon
                                         FontSize="16"
                                         Foreground="{ThemeResource AnchorGoldBrush}"
                                         Glyph="&#xE74A;" />
-                                    <TextBlock Text="{l:Loc Key=action.updateAll}" />
+                                    <TextBlock Text="{l:Loc Key=action.updateFile}" />
                                 </StackPanel>
                             </Button>
+                            <!-- Varios ficheros: el botón actualiza todo; la flecha, fichero a fichero -->
+                            <SplitButton
+                                MinWidth="140"
+                                AutomationProperties.Name="{x:Bind Item.UpdateAllText, Mode=OneWay}"
+                                Click="OnUpdateAllSplitClick"
+                                Visibility="{x:Bind Item.ShowUpdateMenu, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon
+                                        FontSize="16"
+                                        Foreground="{ThemeResource AnchorGoldBrush}"
+                                        Glyph="&#xE74A;" />
+                                    <TextBlock Text="{x:Bind Item.UpdateAllText, Mode=OneWay}" />
+                                </StackPanel>
+                                <SplitButton.Flyout>
+                                    <MenuFlyout
+                                        x:Name="UpdateMenu"
+                                        Opening="OnUpdateMenuOpening"
+                                        Placement="BottomEdgeAlignedLeft" />
+                                </SplitButton.Flyout>
+                            </SplitButton>
                             <!-- Carpeta de la app: <descargas>\<App> -->
                             <Button
                                 AutomationProperties.Name="{l:Loc Key=action.openFolder}"
@@ -286,7 +336,7 @@
                 <TextBlock
                     VerticalAlignment="Center"
                     Style="{StaticResource BodyStrongTextBlockStyle}"
-                    Text="{x:Bind Item.FilesTitle}" />
+                    Text="{l:Loc Key=detail.filesTitle}" />
                 <Button
                     Grid.Column="1"
                     AutomationProperties.Name="{l:Loc Key=action.deleteAll}"
@@ -427,6 +477,19 @@
                                                 Glyph="&#xE73E;"
                                                 ToolTipService.ToolTip="{x:Bind StateText}"
                                                 Visibility="{x:Bind IsUpToDate}" />
+                                            <!-- ⓘ: datos de lo que tienes descargado de este fichero -->
+                                            <Button
+                                                AutomationProperties.Name="{l:Loc Key=info.title}"
+                                                Style="{StaticResource IconButtonStyle}"
+                                                ToolTipService.ToolTip="{l:Loc Key=info.title}"
+                                                Visibility="{x:Bind HasVersions}">
+                                                <FontIcon FontSize="14" Glyph="&#xE946;" />
+                                                <Button.Flyout>
+                                                    <Flyout Placement="BottomEdgeAlignedRight">
+                                                        <ContentControl Content="{x:Bind Details}" ContentTemplate="{StaticResource FileDetailsTemplate}" />
+                                                    </Flyout>
+                                                </Button.Flyout>
+                                            </Button>
                                             <!-- Carpeta del fichero: <App>\<fichero> -->
                                             <Button
                                                 AutomationProperties.Name="{l:Loc Key=action.openFileFolder}"
@@ -525,6 +588,19 @@
                                                         Grid.Column="2"
                                                         Orientation="Horizontal"
                                                         Spacing="4">
+<!-- ⓘ de esta versión -->
+                                                        <Button
+                                                            AutomationProperties.Name="{l:Loc Key=info.title}"
+                                                            Style="{StaticResource IconButtonStyle}"
+                                                            ToolTipService.ToolTip="{l:Loc Key=info.title}"
+                                                            Visibility="{x:Bind HasDetails}">
+                                                            <FontIcon FontSize="14" Glyph="&#xE946;" />
+                                                            <Button.Flyout>
+                                                                <Flyout Placement="BottomEdgeAlignedRight">
+                                                                    <ContentControl Content="{x:Bind Details}" ContentTemplate="{StaticResource FileDetailsTemplate}" />
+                                                                </Flyout>
+                                                            </Button.Flyout>
+                                                        </Button>
                                                         <!-- Carpeta exacta de esta versión -->
                                                         <Button
                                                             AutomationProperties.Name="{l:Loc Key=action.openVersionFolder}"
@@ -567,11 +643,22 @@
                 <Grid
                     ColumnDefinitions="Auto,Auto,*"
                     ColumnSpacing="16"
-                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
                     RowSpacing="14">
                     <FontIcon Glyph="&#xE8EC;" Style="{StaticResource InfoIconStyle}" />
                     <TextBlock Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.version}" />
-                    <TextBlock Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.StableVersionText}" />
+                    <HyperlinkButton
+                        Grid.Column="2"
+                        Padding="0"
+                        Content="{x:Bind Item.StableVersionText}"
+                        NavigateUri="{x:Bind Item.StableReleaseUrl}"
+                        ToolTipService.ToolTip="{x:Bind Item.StableReleaseUrl}"
+                        Visibility="{x:Bind Item.HasStableReleaseUrl}" />
+                    <TextBlock
+                        Grid.Column="2"
+                        Style="{StaticResource InfoValueStyle}"
+                        Text="{x:Bind Item.StableVersionText}"
+                        Visibility="{x:Bind Item.HasNoStableReleaseUrl}" />
 
                     <!-- Beta disponible (solo si la hay) -->
                     <c:BetaIcon
@@ -587,12 +674,20 @@
                         Style="{StaticResource InfoLabelStyle}"
                         Text="{l:Loc Key=detail.betaVersion}"
                         Visibility="{x:Bind Item.HasBeta}" />
+                    <HyperlinkButton
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        Padding="0"
+                        Content="{x:Bind Item.BetaVersionText}"
+                        NavigateUri="{x:Bind Item.Package.BetaReleaseUrl}"
+                        ToolTipService.ToolTip="{x:Bind Item.Package.BetaReleaseUrl}"
+                        Visibility="{x:Bind Item.HasBetaReleaseUrl}" />
                     <TextBlock
                         Grid.Row="1"
                         Grid.Column="2"
                         Style="{StaticResource InfoValueStyle}"
-                        Text="{x:Bind Item.Package.BetaVersion}"
-                        Visibility="{x:Bind Item.HasBeta}" />
+                        Text="{x:Bind Item.BetaVersionText}"
+                        Visibility="{x:Bind Item.HasBetaWithoutReleaseUrl}" />
 
                     <FontIcon Grid.Row="2" Glyph="&#xE77B;" Style="{StaticResource InfoIconStyle}" />
                     <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.author}" />
@@ -610,33 +705,23 @@
                         Text="{x:Bind Item.Author}"
                         Visibility="{x:Bind Item.HasNoAuthorUrl}" />
 
-                    <FontIcon Grid.Row="3" Glyph="&#xE71B;" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.release}" />
+                    <FontIcon Grid.Row="3" Glyph="&#xE8F1;" Style="{StaticResource InfoIconStyle}" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.github}" />
                     <HyperlinkButton
                         Grid.Row="3"
-                        Grid.Column="2"
-                        Padding="0"
-                        Content="{x:Bind Item.ReleaseLinkText}"
-                        IsEnabled="{x:Bind Item.HasReleaseUrl}"
-                        NavigateUri="{x:Bind Item.Package.ReleaseUrl}" />
-
-                    <FontIcon Grid.Row="4" Glyph="&#xE8F1;" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.github}" />
-                    <HyperlinkButton
-                        Grid.Row="4"
                         Grid.Column="2"
                         Padding="0"
                         Content="{x:Bind Item.RepoText}"
                         IsEnabled="{x:Bind Item.HasRepo}"
                         NavigateUri="{x:Bind Item.RepoUrl}" />
 
-                    <FontIcon Grid.Row="5" Glyph="{x:Bind Item.OriginGlyph}" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="5" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.origin}" />
-                    <TextBlock Grid.Row="5" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.OriginText}" />
+                    <FontIcon Grid.Row="4" Glyph="{x:Bind Item.OriginGlyph}" Style="{StaticResource InfoIconStyle}" />
+                    <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.origin}" />
+                    <TextBlock Grid.Row="4" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.OriginText}" />
 
-                    <FontIcon Grid.Row="6" Glyph="&#xE943;" Style="{StaticResource InfoIconStyle}" />
-                    <TextBlock Grid.Row="6" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.id}" />
-                    <TextBlock Grid.Row="6" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.Id}" />
+                    <FontIcon Grid.Row="5" Glyph="&#xE943;" Style="{StaticResource InfoIconStyle}" />
+                    <TextBlock Grid.Row="5" Grid.Column="1" Style="{StaticResource InfoLabelStyle}" Text="{l:Loc Key=detail.id}" />
+                    <TextBlock Grid.Row="5" Grid.Column="2" Style="{StaticResource InfoValueStyle}" Text="{x:Bind Item.Id}" />
                 </Grid>
             </Border>
         </StackPanel>

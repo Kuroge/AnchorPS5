@@ -51,8 +51,9 @@ public sealed partial class PackageFileViewModel : ObservableObject
         IsPs4 = AssetClassifier.DetectPlatform(FileName) == ConsolePlatform.PS4;
         IsBeta = status.Channel == FileChannel.Beta;
 
-        var mine = VersionLabel.Format(installed?.Version.Version);
-        var target = VersionLabel.Format(status.Target?.Version);
+        // Cada versión con su fecha de publicación: "v0.21.1 (12/09/2026)".
+        var mine = VersionDates.WithDate(localization, installed?.Version.Version, installed?.File.ReleasedAt);
+        var target = VersionDates.WithDate(localization, status.Target?.Version, status.Target?.ReleasedAt);
         StateText = (status.State, IsBeta) switch
         {
             (FileState.UpToDate, false) => localization.Format("file.upToDate", mine),
@@ -64,15 +65,21 @@ public sealed partial class PackageFileViewModel : ObservableObject
             (_, true) when status.IsBetaOnly => localization.Format("file.betaOnlyAvailable", target),
             _ => localization.Format("file.available", target),
         };
+        // Botón ⓘ: datos del fichero que tienes (el de este canal).
+        Details = installed is null ? null : new FileDetails(installed.File, installed.Version, localization);
+
         DownloadText = localization.Get(status.State == FileState.UpdateAvailable ? "action.updateFile" : "action.download");
         BetaOfferText = !status.BetaOffered ? string.Empty
-            : localization.Format(status.BetaDownloaded ? "file.betaOfferDownloaded" : "file.betaOffer", VersionLabel.Format(status.Beta!.Version));
+            : localization.Format(status.BetaDownloaded ? "file.betaOfferDownloaded" : "file.betaOffer",
+                VersionDates.WithDate(localization, status.Beta!.Version, status.Beta.ReleasedAt));
         TryBetaText = localization.Get(status.BetaDownloaded ? "action.useBeta" : "action.tryBeta");
 
         var parts = new[] { Label, IsPs4 ? "PS4" : null, IsBeta ? "beta" : null, SizeText };
         MenuText = string.Join("  ·  ", parts.Where(s => !string.IsNullOrEmpty(s)));
-        if (IsUpToDate)
+        if (installed is not null)
             MenuText += "  ·  " + localization.Get("file.alreadyHave");
+        UpdateMenuText = string.Join("  ·  ", parts.Take(3).Where(s => !string.IsNullOrEmpty(s)))
+            + "  ·  " + VersionLabel.Format(installed?.Version.Version) + " → " + VersionLabel.Format(status.Target?.Version);
 
         Versions = versions
             .Select(v => new FileVersionViewModel(v, localization, () => actions.OpenFolder(v.FolderPath), () => actions.Delete([v])))
@@ -91,6 +98,9 @@ public sealed partial class PackageFileViewModel : ObservableObject
     public string Description { get; }
     public bool HasDescription => Description.Length > 0;
     public string SizeText { get; }
+
+    /// <summary>Botón ⓘ: el fichero que tienes en este canal (null si no lo tienes).</summary>
+    public FileDetails? Details { get; }
     public bool IsPs4 { get; }
 
     /// <summary>El usuario está en el canal beta de este fichero (o solo existe en beta).</summary>
@@ -100,6 +110,9 @@ public sealed partial class PackageFileViewModel : ObservableObject
     public string StateText { get; }
     public string DownloadText { get; }
     public string MenuText { get; }
+
+    /// <summary>Opción del menú "Actualizar ▾": "Nombre · v0.21 → v0.21.1".</summary>
+    public string UpdateMenuText { get; }
 
     /// <summary>Se puede descargar algo en el canal actual.</summary>
     public bool CanDownload => Status.Target is not null;
@@ -133,6 +146,15 @@ public sealed partial class PackageFileViewModel : ObservableObject
 
     /// <summary>Versiones descargadas de este fichero, de la más nueva a la más antigua.</summary>
     public IReadOnlyList<InstalledVersion> InstalledVersions { get; }
+
+    /// <summary>
+    /// Lo que se puede borrar al actualizar: las versiones de este fichero en el mismo canal
+    /// que la nueva (la beta no toca las estables guardadas, ni al revés).
+    /// </summary>
+    public IReadOnlyList<InstalledVersion> OldVersionsInChannel => File is not { } target ? [] : InstalledVersions
+        .Where(v => !string.Equals(v.Version, target.Version, StringComparison.OrdinalIgnoreCase)
+            && v.Files.Any(f => f.IsPrerelease == target.IsPrerelease))
+        .ToList();
 
     public IReadOnlyList<FileVersionViewModel> Versions { get; }
 
@@ -218,18 +240,25 @@ public sealed partial class FileVersionViewModel
 
         var file = version.Files.FirstOrDefault();
         IsBeta = file?.IsPrerelease ?? false;
-        var parts = new List<string>
-        {
+        Details = file is null ? null : new FileDetails(file, version, localization);
+        var parts = new List<string>();
+        if (file?.ReleasedAt is { } released)
+            parts.Add(localization.Format("detail.releasedAt", VersionDates.Date(released)));
+        parts.Add(
             version.DownloadedAt is { } date
                 ? localization.Format("detail.downloadedAt", date.ToLocalTime().ToString("d", CultureInfo.CurrentCulture))
-                : localization.Get("detail.manualCopy"),
-        };
+                : localization.Get("detail.manualCopy"));
         if (version.Verified)
             parts.Add(localization.Get("detail.verified"));
         Detail = string.Join(" · ", parts);
     }
 
     public InstalledVersion Installed { get; }
+
+    /// <summary>Botón ⓘ de esta versión.</summary>
+    public FileDetails? Details { get; }
+
+    public bool HasDetails => Details is not null;
     public string VersionText { get; }
     public string FolderPath { get; }
     public string Detail { get; }

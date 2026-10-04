@@ -7,6 +7,33 @@ All notable changes to AnchorPS5. The format follows
 [SemVer](https://semver.org/). While the app is in **alpha**, things may change a lot
 between versions.
 
+## [Unreleased]
+
+### Added
+
+- **Delete previous versions when updating:** every way of updating (one file, an app's
+  “Update all” or the one in the Updates section) asks whether to delete the previous
+  versions or keep them, with “Don't ask again” (always keep them). Previous versions are only
+  deleted once the new one has been downloaded and checked; if anything fails, they are kept.
+- **Download all:** in apps with several files, the “Download” menu now starts with
+  “Download all”, which gets every file you don't have yet in one go.
+- **Release date of every version:** each version now shows when it was published (on the
+  version tags in the app page header, the files, the available beta, the version history
+  and the Information card).
+- **ⓘ button on every downloaded file and on each version in its history:** version,
+  channel (stable or beta), release date, download date and time, size on disk, whether its
+  SHA-256 was checked, the SHA-256 itself, where it was downloaded from and where it's stored.
+
+### Changed
+
+- **Download and update, kept apart:** in apps with several files, “Download” only downloads
+  what you don't have (files you already have show disabled, even if outdated), and “Update all (N)” is a split button: click it to update
+  everything, or use its arrow to pick file by file (showing your version and the new one).
+- In **Information**, the version (and the beta version) links straight to its GitHub
+  release; the "Latest release" row, which repeated the same thing, is gone.
+- The app page's file list is now just titled **Files**: each file already shows its own
+  version (the title used to show the latest published version, which was confusing).
+
 ## [0.1.0-alpha.2] — 2026-10-02
 
 ### Changed

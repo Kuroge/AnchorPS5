@@ -14,6 +14,7 @@ public sealed partial class AppDetailPage : Page
 {
     private const string DownloadGlyph = "\uE896";
     private const string CheckGlyph = "\uE73E";
+    private const string UpdateGlyph = "\uE74A";
 
     public AppDetailPage()
     {
@@ -28,37 +29,88 @@ public sealed partial class AppDetailPage : Page
         Bindings.Update();
     }
 
-    /// <summary>
-    /// Menú "Descargar ▾": una opción por fichero. Lo que ya tienes en su última versión sale
-    /// deshabilitado ("✓ Ya lo tienes"), así nunca se vuelve a descargar.
-    /// </summary>
+    /// <summary>Menú "Descargar ▾": todos los ficheros; los que ya tienes (al día o no) salen deshabilitados.</summary>
     private void OnDownloadMenuOpening(object? sender, object e)
     {
         DownloadMenu.Items.Clear();
+
+        // Si falta alguno: primero "Descargar todo".
+        var missing = Item.DownloadAllFiles.Count;
+        if (missing > 0)
+        {
+            var all = new MenuFlyoutItem
+            {
+                Text = Loc("action.downloadAll", missing),
+                Icon = new FontIcon { Glyph = DownloadGlyph },
+            };
+            all.Click += (_, _) => Item.DownloadAll();
+            DownloadMenu.Items.Add(all);
+            DownloadMenu.Items.Add(new MenuFlyoutSeparator());
+        }
+
         foreach (var file in Item.DownloadableFiles)
         {
-            var option = new MenuFlyoutItem
-            {
-                Text = file.MenuText,
-                Icon = file.IsBeta && !file.IsUpToDate
-                    ? BetaIcon.CreateIcon()
-                    : new FontIcon { Glyph = file.IsUpToDate ? CheckGlyph : DownloadGlyph },
-                IsEnabled = !file.IsUpToDate && !file.IsBusy,
-            };
-            if (file.IsBeta && !file.IsUpToDate && Application.Current.Resources.TryGetValue("BetaBrush", out var beta))
-                option.Foreground = (Brush)beta;
-            ToolTipService.SetToolTip(option, file.HasDescription ? file.Description : file.FileName);
-            option.Click += (_, _) => DownloadWithWarningAsync(file);
+            var missingFile = file.Status.State == FileState.NotDownloaded;
+            var option = FileOption(file, file.MenuText, missingFile ? DownloadGlyph : CheckGlyph);
+            if (missingFile)
+                option.Click += (_, _) => DownloadWithWarningAsync(file);
+            else
+                option.IsEnabled = false;
             DownloadMenu.Items.Add(option);
         }
     }
 
+    /// <summary>Flecha de "Actualizar todo (N) ▾": actualizar fichero a fichero.</summary>
+    private void OnUpdateMenuOpening(object? sender, object e)
+    {
+        UpdateMenu.Items.Clear();
+        foreach (var file in Item.OutdatedFiles)
+        {
+            var option = FileOption(file, file.UpdateMenuText, UpdateGlyph);
+            option.Click += async (_, _) => await UpdateAsync([file]);
+            UpdateMenu.Items.Add(option);
+        }
+    }
+
+    private static MenuFlyoutItem FileOption(PackageFileViewModel file, string text, string glyph)
+    {
+        var option = new MenuFlyoutItem
+        {
+            Text = text,
+            Icon = file.IsBeta && glyph != CheckGlyph ? BetaIcon.CreateIcon() : new FontIcon { Glyph = glyph },
+            IsEnabled = !file.IsBusy,
+        };
+        if (file.IsBeta && glyph != CheckGlyph && Application.Current.Resources.TryGetValue("BetaBrush", out var beta))
+            option.Foreground = (Brush)beta;
+        ToolTipService.SetToolTip(option, file.HasDescription ? file.Description : file.FileName);
+        return option;
+    }
+
     // ---- Descargar y betas ----
 
-    private void OnFileDownloadClick(object sender, RoutedEventArgs e)
+    private async void OnFileDownloadClick(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.Tag is PackageFileViewModel file)
+        if ((sender as FrameworkElement)?.Tag is not PackageFileViewModel file)
+            return;
+        if (file.HasUpdate)
+            await UpdateAsync([file]);
+        else
             DownloadWithWarningAsync(file);
+    }
+
+    // ---- Actualizar (siempre con la pregunta de borrar o conservar lo anterior) ----
+
+    private async void OnUpdateAllClick(object sender, RoutedEventArgs e) => await UpdateAsync(Item.OutdatedFiles);
+
+    private async void OnUpdateAllSplitClick(SplitButton sender, SplitButtonClickEventArgs e) => await UpdateAsync(Item.OutdatedFiles);
+
+    private async Task UpdateAsync(IReadOnlyList<PackageFileViewModel> files)
+    {
+        if (files.Count == 0)
+            return;
+        var removeOld = await UpdateDialogs.AskRemoveOldAsync(XamlRoot, ActualTheme, CatalogItemViewModel.OldVersionCount(files));
+        if (removeOld is { } remove)
+            Item.Update(files, remove);
     }
 
     /// <summary>Descargar una beta por primera vez (fichero solo-beta) pide confirmación.</summary>

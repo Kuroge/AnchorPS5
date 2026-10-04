@@ -139,7 +139,7 @@ public sealed class LibraryService
 
         var version = string.IsNullOrWhiteSpace(metadata.Version) ? folderName : metadata.Version;
         var files = metadata.Files.Count > 0
-            ? metadata.Files.Select(f => new InstalledFile(f.Key, f.FileName, f.Path, f.Sha256, f.Verified, f.DownloadedAt, f.Prerelease, f.ReleasedAt)).ToList()
+            ? metadata.Files.Select(f => new InstalledFile(f.Key, f.FileName, f.Path, f.Sha256, f.Verified, f.DownloadedAt, f.Prerelease, f.ReleasedAt, f.DownloadUrl)).ToList()
             : FilesInFolder(versionDir, version);
 
         return new InstalledVersion(

@@ -29,7 +29,7 @@
                 Grid.Column="1"
                 VerticalAlignment="Center"
                 AutomationProperties.Name="{l:Loc Key=action.updateAll}"
-                Command="{x:Bind ViewModel.UpdateAllAppsCommand}"
+                Click="OnUpdateAllAppsClick"
                 Style="{StaticResource AccentButtonStyle}"
                 Visibility="{x:Bind ViewModel.CanUpdateAll, Mode=OneWay}">
                 <StackPanel Orientation="Horizontal" Spacing="8">

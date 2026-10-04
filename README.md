@@ -42,8 +42,13 @@ o el Homebrew Browser de Wii, pero para PS5.
 - 🏷️ **Origen de cada app:** del catálogo oficial o añadida por ti.
 - ⬇️ **Descargas verificadas:** cada fichero sale de la release oficial de su autor en
   GitHub y se comprueba con su SHA-256. Los `.zip`, `.7z` y `.rar` se extraen solos.
-- 🔄 **Actualizaciones por fichero** (`0.1 → 0.2`) y botón **Actualizar todo**.
+  **Descargar todo** baja de una vez los ficheros de una app que aún no tienes.
+- 🔄 **Actualizaciones por fichero** (`0.1 → 0.2`, con la fecha de cada versión) y
+  **Actualizar todo**, por app o de todas a la vez. Al actualizar puedes borrar las
+  versiones anteriores: solo se borran cuando la nueva está descargada y comprobada.
 - 🗂️ **Historial de versiones:** guarda las versiones anteriores para volver atrás.
+- ⓘ **Detalles de cada fichero:** versión, canal, fechas de publicación y descarga, tamaño,
+  SHA-256, origen y ubicación.
 - 🧪 **Betas opcionales:** prueba la beta de un fichero y vuelve a la estable cuando
   quieras.
 - 🏷️ Etiqueta **PS4** en los ficheros que no son para PS5.
