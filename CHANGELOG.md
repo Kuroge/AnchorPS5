@@ -7,7 +7,7 @@ Todos los cambios importantes de AnchorPS5. El formato sigue
 [SemVer](https://semver.org/lang/es/). Mientras la app sea **alpha**, puede cambiar mucho
 de una versión a otra.
 
-## [Sin publicar]
+## [0.1.1-alpha.1] — 2026-10-04
 
 ### Añadido
 
@@ -89,5 +89,6 @@ Primera versión de prueba.
 - **Diseño** con los colores de PlayStation y el dorado del arranque de PS5, fondo Mica y
   tema claro u oscuro según Windows.
 
+[0.1.1-alpha.1]: https://github.com/Kuroge/AnchorPS5/releases/tag/v0.1.1-alpha.1
 [0.1.0-alpha.2]: https://github.com/Kuroge/AnchorPS5/releases/tag/v0.1.0-alpha.2
 [0.1.0-alpha.1]: https://github.com/Kuroge/AnchorPS5/releases/tag/v0.1.0-alpha.1

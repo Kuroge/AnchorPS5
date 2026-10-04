@@ -6,7 +6,7 @@
 
 ### The homebrew store for your PS5
 
-[![Version](https://img.shields.io/badge/version-0.1.0--alpha.2-F2C14E?style=for-the-badge)](CHANGELOG.en.md)
+[![Version](https://img.shields.io/badge/version-0.1.1--alpha.1-F2C14E?style=for-the-badge)](CHANGELOG.en.md)
 [![Windows 10 | 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0070D1?style=for-the-badge&logo=windows11&logoColor=white)](#requirements)
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![License GPL v3](https://img.shields.io/badge/license-GPL%20v3-0070D1?style=for-the-badge)](LICENSE)
